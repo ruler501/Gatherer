@@ -168,6 +168,9 @@ def get_card(mvid):
         except:
             pass
 
+    if not kwargs:
+        return None
+
     return CardInfo(**kwargs)
 
 

@@ -1,6 +1,5 @@
 import ast
 import contextlib
-import copy
 import functools
 import inspect
 import os
@@ -39,47 +38,48 @@ cards_var = ("printings", "rarity", "border", "watermark",
              "legalities", "image_url", "color_identity",
              "original_text", "number", "variations",
              "release_date", "original_type", "hand", "toughness")
-# CREATE TABLE cards (
-# "printings" list<string(enum 3 letter set symbols)>,
-# "rarity" string(enum rarities),
-# "border" text,\\
-# "watermark" text,\\
-# "loyalty" text,\\
-# "set" string(enum 3letter set symbols),
-# "multiverse_id" int,
-# "text" string,
-# "type" string,
-# "life" text,\\
-# "subtypes" list<string>,\\
-# "flavor" string?,\\
-# "rulings" list<dict<(date,text)>>,
-# "mana_cost" string(valid mana cost ({.(/.)?})+,
-# "starter" text, \\
-# "names" text, \\
-# "timeshifted" text, \\
-# "foreign_names" text, \\
-# "artist" string,
-# "supertypes" list<string(enum supertypes)>, \\
-# "types" list<string(enum types)>,
-# "colors" list<string(enum colors)>, \\
-# "source" text, \\
-# "id" string(hex),
-# "layout" text, \\
-# "set_name" string,
-# "power" int, \\
-# "cmc" uint,
-# "name" string,
-# "legalities" list<dict<(legality, format)>>,
-# "image_url" url,
-# "color_identity" list<char(WUBRG)>?, \\
-# "original_text" string,
-# "number" int?, \\
-# "variations" text, \\
-# "release_date" text, \\
-# "original_type" string,
-# "hand" text, \\
-# "toughness" int
-# );
+var_type = \
+    {
+        'printings': 'list',
+        'rarity': 'string',
+        'border': 'string',  # Effectively unused, should phase out
+        'watermark': 'string',
+        'loyalty': 'int',
+        'set': 'string',
+        'multiverse_id': 'int',
+        'text': 'string',
+        'type': 'string',  # Full type line
+        'life': 'int',  # Vanguard only
+        'subtypes': 'list',
+        'flavor': 'string',
+        'rulings': 'list',  # Of dicts(date, string)
+        'mana_cost': 'string',  # In the form of ({.(/.)?})+
+        'starter': 'text',  # What does this do?
+        'names': 'list',  # Names for double faced cards
+        'timeshifted': 'text',  # What does this do?
+        'foreign_names': 'list',  # Of dicts(language, imageUrl, multiverseid, name)
+        'artist': 'string',
+        'supertypes': 'list',
+        'types': 'list',
+        'colors': 'list',
+        'source': 'string',  # Effectively unused should phase out
+        'id': 'bytes',  # Can probably be hidden
+        'layout': 'string',
+        'set_name': 'string',
+        'power': 'int',
+        'cmc': 'int',
+        'name': 'string',
+        'legalities': 'list',  # Of dicts(legality, format)
+        'image_url': 'string',
+        'color_identity': 'list',
+        'original_text': 'string',
+        'number': 'int',  # Collectors Number
+        'variations': 'list',  # mvids for things with multiple arts in same set
+        'release_date': 'string',  # Effectively unused
+        'original_type': 'string',
+        'hand': 'int',  # Vanguard only
+        'toughness': 'int'
+    }
 
 
 def disk_cache(cache_file):
@@ -90,12 +90,9 @@ def disk_cache(cache_file):
                 cache = pickle.load(inp)
 
         def f(*args, **kwargs):
-            args.append(frozenset(kwargs.items()))
-            args_tuple = tuple(*args)
+            args_tuple = frozenset(kwargs.items()), *args
             res = cache.get(args_tuple, None)
             if res is not None:
-                if DEBUG:
-                    print(args_tuple)
                 return res
             res = fun(*args, **kwargs)
             cache[args_tuple] = res
@@ -190,21 +187,39 @@ def create_db(dest=DB):
 
 
 def row_to_dict(row):
-    return {cards_var[i]: row[i] for i in range(len(cards_var))}
+    res = {}
+
+    for var, val in zip(cards_var, row):
+        if val is None or val == 'None':
+            res[var] = None
+        elif var_type[var] == 'int':
+            try:
+                res[var] = int(val)
+            except ValueError:
+                res[var] = str(val)
+        elif var_type[var] == 'list':
+            res[var] = ast.literal_eval(val)
+        else:
+            res[var] = str(val)
+
+    return res
 
 
 class Cards:
     class CardsQuery:
-        query = 'SELECT * FROM cards WHERE '
-        params = []
-        connector = ''
-        back_conn = ' AND '
-        preds = []
+        def __init__(self):
+            self.query = 'SELECT * FROM cards WHERE '
+            self.params = []
+            self.connector = ''
+            self.back_conn = ' AND '
+            self.preds = []
 
         def where(self, **kwargs):
             for key, value in kwargs.items():
                 if key in cards_var:
                     self.query += self.connector + key + '=?'
+                    if value is None:
+                        value = "None"
                     self.params.append(value)
                 if self.connector == '':
                     self.connector = self.back_conn
@@ -307,7 +322,7 @@ class Cards:
 
 
 for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction):
-    member_name = copy.copy(member[0])
+    member_name = member[0]
     if member_name.startswith('_'):
         continue
 
@@ -337,7 +352,7 @@ def get_all_printings(mvid):
 
 def is_origin_legal(mvid):
     card = get_card_by_mvid(mvid)
-    printings = ast.literal_eval(card['printings'])
+    printings = card['printings']
     for printing in printings:
         if printing in origins_list:
             if DEBUG:
@@ -350,7 +365,11 @@ def filter_to_origin_legal(mvids):
     return (mvid for mvid in mvids if is_origin_legal(mvid))
 
 
-cards = Cards.where_contains(name='Lightning').where(toughness=1).use_not().where_contains(name='Ball').find_all()
-cards = make_unique(cards, lambda x: x['name'])
-for x in sorted(cards, key=lambda x: x['name']):
-    print(x['name'])
+# cards = Cards.where_contains(name='Lightning')\
+#     .where(toughness=1)\
+#     .use_not().where_contains(name='Ball')\
+#     .use_not().where(rulings=None)\
+#     .find_all()
+# cards = make_unique(cards, lambda x: x['name'])
+# for x in sorted(cards, key=lambda x: x['name']):
+#     print(x['name'], x['rulings'][0]['text'])

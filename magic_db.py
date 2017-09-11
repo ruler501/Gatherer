@@ -1,9 +1,14 @@
 import ast
 import contextlib
+import copy
+import functools
+import inspect
 import os
 import pickle
 import re
 import sqlite3
+
+from collections import Counter
 
 import mtgsdk
 
@@ -17,7 +22,7 @@ def contains(item, expr):
         res = ast.literal_eval(item)
         return res is not None and expr in res
     except:
-        return False
+        return expr in item
 
 
 DB = "cards.sqlite3"
@@ -85,7 +90,8 @@ def disk_cache(cache_file):
                 cache = pickle.load(inp)
 
         def f(*args, **kwargs):
-            args_tuple = tuple(*args, frozenset(kwargs.items()))
+            args.append(frozenset(kwargs.items()))
+            args_tuple = tuple(*args)
             res = cache.get(args_tuple, None)
             if res is not None:
                 if DEBUG:
@@ -132,8 +138,23 @@ get_cursor.cursor = None
 
 
 def create_db(dest=DB):
-    cards = []
-    cards = mtgsdk.Card.where(language="English").all()
+    cards = set(mtgsdk.Card.where(language="English").all())
+    mvid_count = Counter()
+    for card in cards:
+        mvid_count[card.multiverse_id] += 1
+    for mvid, count in mvid_count.items():
+        if count == 2:
+            dup = [card for card in cards if cards.multiverse_id == mvid]
+            if dup[0].name == dup[1].name:
+                pass
+            else:
+                cards.remove(dup[1])
+        elif count > 2:
+            dup = [card for card in cards if cards.multiverse_id == mvid]
+            next(dup)
+            for i in dup:
+                cards.remove(dup[i])
+
     with contextlib.suppress(FileNotFoundError):
         os.remove(dest)
     conn = sqlite3.connect(dest)
@@ -172,45 +193,150 @@ def row_to_dict(row):
     return {cards_var[i]: row[i] for i in range(len(cards_var))}
 
 
-def get_cards(**kwargs):
-    sql = 'SELECT * FROM cards WHERE '
-    params = []
-    preds = []
-    connect = ' '
-    for key, value in kwargs.items():
-        if key == 'mvid':
-            key = 'multiverse_id'
-        if key in cards_var:
-            sql += connect + key + '=?'
-            params.append(value)
-        elif key.startswith('reg_'):
-            sql += connect + 'REGEXP(' + key[4:] + ',?)'
-            params.append(value)
-        else:
-            preds.append(value)
-        connect = ' AND '
-    cursor = get_cursor()
-    if DEBUG:
-        print(sql, params)
-    cursor.execute(sql, params)
-    cards = [row_to_dict(x) for x in cursor.fetchall()]
-    return (card for card in cards if all(pred(card) for pred in preds))
+class Cards:
+    class CardsQuery:
+        query = 'SELECT * FROM cards WHERE '
+        params = []
+        connector = ''
+        back_conn = ' AND '
+        preds = []
+
+        def where(self, **kwargs):
+            for key, value in kwargs.items():
+                if key in cards_var:
+                    self.query += self.connector + key + '=?'
+                    self.params.append(value)
+                if self.connector == '':
+                    self.connector = self.back_conn
+            return self
+
+        def where_matches(self, **kwargs):
+            for key, value in kwargs.items():
+                if key in cards_var:
+                    self.query += self.connector + 'REGEXP(' + key + ',?)'
+                    self.params.append(value)
+                if self.connector == '':
+                    self.connector = self.back_conn
+            return self
+
+        def where_contains(self, **kwargs):
+            for key, value in kwargs.items():
+                if key in cards_var:
+                    self.query += self.connector + 'CONTAINS(' + key + ',?)'
+                    self.params.append(value)
+                if self.connector == '':
+                    self.connector = self.back_conn
+            return self
+
+        def where_contains_all(self, **kwargs):
+            for key, value in kwargs.items():
+                if key in cards_var:
+                    self.query += self.connector + '('
+                    conn = ''
+                    for v in value:
+                        self.query += conn + 'CONTAINS(' + key + ',?)'
+                        self.params.append(v)
+                        conn = ' AND '
+                    self.query += ')'
+                if self.connector == '':
+                    self.connector = self.back_conn
+            return self
+
+        def where_at_least(self, **kwargs):
+            for key, value in kwargs.items():
+                if key in cards_var:
+                    self.query += self.connector + key + '>=?'
+                    self.params.append(value)
+                if self.connector == '':
+                    self.connector = self.back_conn
+            return self
+
+        def where_at_most(self, **kwargs):
+            for key, value in kwargs.items():
+                if key in cards_var:
+                    self.query += self.connector + 'CONTAINS(' + key + ',?)'
+                    self.params.append(value)
+                if self.connector == '':
+                    self.connector = self.back_conn
+            return self
+
+        def with_pred(self, pred):
+            self.preds.append(pred)
+            return self
+
+        def start_block(self):
+            self.query += self.connector + '('
+            self.connector = ''
+            self.back_conn = self.connector
+            return self
+
+        def end_block(self):
+            self.query += ')'
+            self.connector = self.back_conn
+            return self
+
+        def use_and(self):
+            self.connector = ' AND '
+            return self
+
+        def use_or(self):
+            self.connector = ' OR '
+            return self
+
+        def use_not(self):
+            self.query += self.connector + ' NOT '
+            self.back_conn = self.connector
+            self.connector = ''
+            return self
+
+        def find_all(self):
+            cursor = get_cursor()
+            if DEBUG:
+                print(self.query, self.params)
+            cursor.execute(self.query, self.params)
+            cards = [row_to_dict(x) for x in cursor.fetchall()]
+            return (card for card in cards if all(pred(card) for pred in self.preds))
+
+        def find_one(self):
+            cursor = get_cursor()
+            if DEBUG:
+                print(self.query, self.params)
+            cursor.execute(self.query, self.params)
+            cards = [row_to_dict(x) for x in cursor.fetchall()]
+            return next((card for card in cards if all(pred(card) for pred in self.preds)))
 
 
-@disk_cache('card.cache')
-def get_card(**kwargs):
-    if DEBUG:
-        print("GETTING CARD")
-    return next(get_cards(**kwargs))
+for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction):
+    member_name = copy.copy(member[0])
+    if member_name.startswith('_'):
+        continue
+
+    def func(member_name, *args, **kwargs):
+        query = Cards.CardsQuery()
+        f = getattr(query, member_name)
+        return f(*args, **kwargs)
+
+    setattr(Cards, member_name, staticmethod(functools.partial(func, member_name)))
+
+
+@disk_cache('cards.mvid.cache')
+def get_card_by_mvid(mvid):
+    return Cards.where(multiverse_id=mvid).find_one()
+
+
+@disk_cache('cards.name.cache')
+def get_card_by_name(name):
+    return Cards.where(name=name).find_one()
 
 
 def get_all_printings(mvid):
-    cards = get_cards(name=get_card(multiverse_id=mvid)['name'])
+    card_name = get_card_by_mvid(mvid)['name']
+    cards = Cards.where(name=card_name).find_all()
     return (x['multiverse_id'] for x in cards)
 
 
 def is_origin_legal(mvid):
-    card = get_card(multiverse_id=mvid)
+    card = get_card_by_mvid(mvid)
     printings = ast.literal_eval(card['printings'])
     for printing in printings:
         if printing in origins_list:
@@ -222,3 +348,9 @@ def is_origin_legal(mvid):
 
 def filter_to_origin_legal(mvids):
     return (mvid for mvid in mvids if is_origin_legal(mvid))
+
+
+cards = Cards.where_contains(name='Lightning').where(toughness=1).use_not().where_contains(name='Ball').find_all()
+cards = make_unique(cards, lambda x: x['name'])
+for x in sorted(cards, key=lambda x: x['name']):
+    print(x['name'])

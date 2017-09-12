@@ -16,14 +16,6 @@ def regexp(expr, item):
     return re.search(item, expr) is not None
 
 
-def contains(item, expr):
-    try:
-        res = ast.literal_eval(item)
-        return res is not None and expr in res
-    except:
-        return expr in item
-
-
 DB = "cards.sqlite3"
 origins = r'(ORI)|(BFZ)|(OGW)|(SOI)|(EMN)|(KLD)|(AER)|(AKH)|(HOU)|(DDP)|(DDQ)|(DDR)|(DDS)|(E01)|(C15)|(C16)|(C17)|(CN2)'
 origins_list = origins.replace('(', '').replace(')', '').split('|')
@@ -117,7 +109,6 @@ def make_unique(lst, func=lambda x: x):
 def get_conn():
     if get_conn.conn is None:
         get_conn.conn = sqlite3.connect('cards.sqlite3')
-        get_conn.conn.create_function("CONTAINS", 2, contains)
         get_conn.conn.create_function("REGEXP", 2, regexp)
     return get_conn.conn
 
@@ -209,7 +200,6 @@ class Cards:
     class CardsQuery:
         def __init__(self):
             self.query = 'SELECT * FROM cards WHERE '
-            self.params = []
             self.connector = ''
             self.back_conn = ' AND '
             self.preds = []
@@ -217,22 +207,21 @@ class Cards:
         def _where(self, _lookup, **kwargs):
             for key, value in kwargs.items():
                 if key in cards_var:
-                    self.query += self.connector + _lookup.format(key)
                     if value is None:
                         value = "None"
-                    self.params.append(value)
+                    self.query += self.connector + _lookup.format(key, value)
                 if self.connector == '':
                     self.connector = self.back_conn
             return self
 
         def where(self, **kwargs):
-            return self._where("{}=?", **kwargs)
+            return self._where("{}={}", **kwargs)
 
         def where_matches(self, **kwargs):
-            return self._where("REGEXP({},?)", **kwargs)
+            return self._where("REGEXP({},{})", **kwargs)
 
         def where_contains(self, **kwargs):
-            return self._where("CONTAINS({},?)", **kwargs)
+            return self._where("{} LIKE '%{}%'", **kwargs)
 
         def where_contains_all(self, **kwargs):
             for key, value in kwargs.items():
@@ -241,10 +230,10 @@ class Cards:
             return self
 
         def where_at_least(self, **kwargs):
-            return self._where("{}>=?", **kwargs)
+            return self._where("{}>={}", **kwargs)
 
         def where_at_most(self, **kwargs):
-            return self._where("{}>=?", **kwargs)
+            return self._where("{}>={}", **kwargs)
 
         def with_pred(self, pred):
             self.preds.append(pred)
@@ -278,8 +267,8 @@ class Cards:
         def find_all(self):
             cursor = get_cursor()
             if DEBUG:
-                print(self.query, self.params)
-            cursor.execute(self.query, self.params)
+                print(self.query)
+            cursor.execute(self.query)
             cards = [row_to_dict(x) for x in cursor.fetchall()]
             return (card for card in cards if all(pred(card) for pred in self.preds))
 

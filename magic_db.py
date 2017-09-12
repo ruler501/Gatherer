@@ -27,8 +27,8 @@ def contains(item, expr):
 DB = "cards.sqlite3"
 origins = r'(ORI)|(BFZ)|(OGW)|(SOI)|(EMN)|(KLD)|(AER)|(AKH)|(HOU)|(DDP)|(DDQ)|(DDR)|(DDS)|(E01)|(C15)|(C16)|(C17)|(CN2)'
 origins_list = origins.replace('(', '').replace(')', '').split('|')
-# DEBUG = True
-DEBUG = False
+DEBUG = True
+# DEBUG = False
 cards_var = ("printings", "rarity", "border", "watermark",
              "loyalty", "set", "multiverse_id", "text", "type",
              "life", "subtypes", "flavor", "rulings", "mana_cost",
@@ -214,10 +214,10 @@ class Cards:
             self.back_conn = ' AND '
             self.preds = []
 
-        def where(self, **kwargs):
+        def _where(self, _lookup, **kwargs):
             for key, value in kwargs.items():
                 if key in cards_var:
-                    self.query += self.connector + key + '=?'
+                    self.query += self.connector + _lookup.format(key)
                     if value is None:
                         value = "None"
                     self.params.append(value)
@@ -225,55 +225,26 @@ class Cards:
                     self.connector = self.back_conn
             return self
 
+        def where(self, **kwargs):
+            return self._where("{}=?", **kwargs)
+
         def where_matches(self, **kwargs):
-            for key, value in kwargs.items():
-                if key in cards_var:
-                    self.query += self.connector + 'REGEXP(' + key + ',?)'
-                    self.params.append(value)
-                if self.connector == '':
-                    self.connector = self.back_conn
-            return self
+            return self._where("REGEXP({},?)", **kwargs)
 
         def where_contains(self, **kwargs):
-            for key, value in kwargs.items():
-                if key in cards_var:
-                    self.query += self.connector + 'CONTAINS(' + key + ',?)'
-                    self.params.append(value)
-                if self.connector == '':
-                    self.connector = self.back_conn
-            return self
+            return self._where("CONTAINS({},?)", **kwargs)
 
         def where_contains_all(self, **kwargs):
             for key, value in kwargs.items():
-                if key in cards_var:
-                    self.query += self.connector + '('
-                    conn = ''
-                    for v in value:
-                        self.query += conn + 'CONTAINS(' + key + ',?)'
-                        self.params.append(v)
-                        conn = ' AND '
-                    self.query += ')'
-                if self.connector == '':
-                    self.connector = self.back_conn
+                for v in value:
+                    self.where_contains(**{key: v})
             return self
 
         def where_at_least(self, **kwargs):
-            for key, value in kwargs.items():
-                if key in cards_var:
-                    self.query += self.connector + key + '>=?'
-                    self.params.append(value)
-                if self.connector == '':
-                    self.connector = self.back_conn
-            return self
+            return self._where("{}>=?", **kwargs)
 
         def where_at_most(self, **kwargs):
-            for key, value in kwargs.items():
-                if key in cards_var:
-                    self.query += self.connector + 'CONTAINS(' + key + ',?)'
-                    self.params.append(value)
-                if self.connector == '':
-                    self.connector = self.back_conn
-            return self
+            return self._where("{}>=?", **kwargs)
 
         def with_pred(self, pred):
             self.preds.append(pred)
@@ -313,12 +284,19 @@ class Cards:
             return (card for card in cards if all(pred(card) for pred in self.preds))
 
         def find_one(self):
-            cursor = get_cursor()
-            if DEBUG:
-                print(self.query, self.params)
-            cursor.execute(self.query, self.params)
-            cards = [row_to_dict(x) for x in cursor.fetchall()]
-            return next((card for card in cards if all(pred(card) for pred in self.preds)))
+            return next(self.find_all())
+
+    @staticmethod
+    @disk_cache('cards.mvid.cache')
+    def find_by_mvid(mvid):
+        return Cards.where(multiverse_id=mvid).find_one()
+
+    @staticmethod
+    @disk_cache('printings.mvid.cache')
+    def find_all_printings(mvid):
+        card_name = Cards.find_by_mvid(mvid)['name']
+        cards = Cards.where(name=card_name).find_all()
+        return (x['multiverse_id'] for x in cards)
 
 
 for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction):
@@ -334,24 +312,8 @@ for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction)
     setattr(Cards, member_name, staticmethod(functools.partial(func, member_name)))
 
 
-@disk_cache('cards.mvid.cache')
-def get_card_by_mvid(mvid):
-    return Cards.where(multiverse_id=mvid).find_one()
-
-
-@disk_cache('cards.name.cache')
-def get_card_by_name(name):
-    return Cards.where(name=name).find_one()
-
-
-def get_all_printings(mvid):
-    card_name = get_card_by_mvid(mvid)['name']
-    cards = Cards.where(name=card_name).find_all()
-    return (x['multiverse_id'] for x in cards)
-
-
 def is_origin_legal(mvid):
-    card = get_card_by_mvid(mvid)
+    card = Cards.find_by_mvid(mvid)
     printings = card['printings']
     for printing in printings:
         if printing in origins_list:
@@ -361,15 +323,19 @@ def is_origin_legal(mvid):
     return False
 
 
-def filter_to_origin_legal(mvids):
-    return (mvid for mvid in mvids if is_origin_legal(mvid))
+if __name__ == "__main__":
+    cards = Cards.where_contains(name='Lightning')\
+        .where_contains(**{'type': 'Creature'})\
+        .use_not().where_contains(name='Ball')\
+        .find_all()
 
-
-# cards = Cards.where_contains(name='Lightning')\
-#     .where(toughness=1)\
-#     .use_not().where_contains(name='Ball')\
-#     .use_not().where(rulings=None)\
-#     .find_all()
-# cards = make_unique(cards, lambda x: x['name'])
-# for x in sorted(cards, key=lambda x: x['name']):
-#     print(x['name'], x['rulings'][0]['text'])
+    cards = Cards.where_contains_all(text="Destroy target permanent".split()).find_all()
+    cards = Cards.where_contains(flavor="Jace")\
+        .use_or()\
+        .where_contains(text="Jace")\
+        .where_contains(name="Jace")\
+        .find_all()
+    cards = make_unique(cards, lambda x: x['name'])
+    for x in sorted(cards, key=lambda x: x['name']):
+        print(x['name'], ': ', x['flavor'])
+    print(len(cards))

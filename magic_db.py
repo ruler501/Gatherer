@@ -13,7 +13,7 @@ import mtgsdk
 
 
 def regexp(expr, item):
-    return re.search(item, expr) is not None
+    return re.search(item.lower(), expr.lower()) is not None
 
 
 DB = "cards.sqlite3"
@@ -196,32 +196,68 @@ def row_to_dict(row):
     return res
 
 
+def get_price(card):
+    pass
+
+
+# Note: Blocks don't work with predicates, but negated does
 class Cards:
     class CardsQuery:
+        ops = \
+            {
+                "equals": "{}='{}'",
+                "matches": "REGEXP({}, '{}')",
+                "contains": "{} LIKE '%{}%'",
+                "at_least": "{}>={}",
+                "at_most": "{}<={}"
+            }
+        calculated_ops = \
+            {
+                "equals": lambda x, y: x == y,
+                "matches": regexp,
+                "contains": lambda x, y: x in y,
+                "at_least": lambda x, y: x >= y,
+                "at_most": lambda x, y: x <= y
+            }
+        calculated_vars = \
+            {
+                "price": get_price,
+                # "legal_in_*"
+            }
+
         def __init__(self):
             self.query = 'SELECT * FROM cards WHERE '
             self.connector = ''
             self.back_conn = ' AND '
             self.preds = []
+            self.use_not = False
 
         def _where(self, _lookup, **kwargs):
             for key, value in kwargs.items():
                 if key in cards_var:
                     if value is None:
                         value = "None"
-                    self.query += self.connector + _lookup.format(key, value)
+                    self.query += self.connector
+                    if self.use_not:
+                        self.query += ' NOT '
+                        self.use_not = False
+                    self.query += self.ops[_lookup].format(key, value)
+                elif key in self.calculated_vars:
+                    # Add a predicate that calculates the value from card
+                    # Then checks if calculated_ops[_lookup] returns true
+                    pass
                 if self.connector == '':
                     self.connector = self.back_conn
             return self
 
         def where(self, **kwargs):
-            return self._where("{}={}", **kwargs)
+            return self._where("equals", **kwargs)
 
         def where_matches(self, **kwargs):
-            return self._where("REGEXP({},{})", **kwargs)
+            return self._where("matches", **kwargs)
 
         def where_contains(self, **kwargs):
-            return self._where("{} LIKE '%{}%'", **kwargs)
+            return self._where("contains", **kwargs)
 
         def where_contains_all(self, **kwargs):
             for key, value in kwargs.items():
@@ -230,12 +266,14 @@ class Cards:
             return self
 
         def where_at_least(self, **kwargs):
-            return self._where("{}>={}", **kwargs)
+            return self._where("at_least", **kwargs)
 
         def where_at_most(self, **kwargs):
-            return self._where("{}>={}", **kwargs)
+            return self._where("at_most", **kwargs)
 
         def with_pred(self, pred):
+            if self.use_not:
+                pred = functools.partial(pred, lambda p, x: not p(x))
             self.preds.append(pred)
             return self
 
@@ -258,10 +296,8 @@ class Cards:
             self.connector = ' OR '
             return self
 
-        def use_not(self):
-            self.query += self.connector + ' NOT '
-            self.back_conn = self.connector
-            self.connector = ''
+        def negated(self):
+            self.use_not = not self.use_not
             return self
 
         def find_all(self):
@@ -313,18 +349,23 @@ def is_origin_legal(mvid):
 
 
 if __name__ == "__main__":
-    cards = Cards.where_contains(name='Lightning')\
-        .where_contains(**{'type': 'Creature'})\
-        .use_not().where_contains(name='Ball')\
-        .find_all()
-
-    cards = Cards.where_contains_all(text="Destroy target permanent".split()).find_all()
-    cards = Cards.where_contains(flavor="Jace")\
-        .use_or()\
-        .where_contains(text="Jace")\
-        .where_contains(name="Jace")\
+    cards = Cards.where(cmc=3)\
+        .where_contains(color_identity='U')\
+        .where_contains_all(text='draw card'.split())\
+        .where_at_least(toughness=2)\
+        .where_at_most(power=3)\
+        .negated().where_contains(**{'type': 'Wall'})\
+        .with_pred(lambda x: is_origin_legal)\
         .find_all()
     cards = make_unique(cards, lambda x: x['name'])
-    for x in sorted(cards, key=lambda x: x['name']):
-        print(x['name'], ': ', x['flavor'])
+
+    for x in cards:
+        print(x['name'],
+              x['mana_cost'],
+              str(x['power']) + '/' + str(x['toughness']),
+              x['type'],
+              x['set_name'],
+              x['text'],
+              sep=": ")
+        print()
     print(len(cards))

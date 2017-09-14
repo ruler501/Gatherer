@@ -44,7 +44,7 @@ class OperationSelector(Button):
 
     def __init__(self, **kwargs):
         super(OperationSelector, self).__init__(**kwargs)
-        self.text = 'Equals'
+        self.text = 'Contains'
         self.font_size = 16
 
         self.drop_list = DropDown()
@@ -123,6 +123,8 @@ class FieldInput(BoxLayout):
         self.parent.parent.remove_row(self)
 
     def update_query(self, i, query):
+        if len(self.text_sel.text) == 0:
+            return query
         if i > 0:
             query = getattr(query, self.conn_sel.get_connector())()
         if self.neg_sel.use_not:
@@ -145,8 +147,6 @@ class SearchFields(ScrollView):
 
     def remove_row(self, view):
         self.inner_layout.remove_widget(view)
-        if len(self.inner_layout.children) > 0:
-            self.inner_layout.children[0].delete_conn
 
     def perform_search(self):
         query = Cards.CardsQuery()
@@ -178,9 +178,9 @@ class ManaCost(BoxLayout):
     mana_cost = StringProperty('', allownone=True)
 
     def on_mana_cost(self, instance, value):
+        self.clear_widgets()
         if value is None:
             return
-        self.clear_widgets()
         mana_cost = value.replace('{', '').split('}')
         for m in mana_cost:
             m = str(m)
@@ -205,10 +205,7 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     card = ObjectProperty()
     mana_render = ObjectProperty()
     back_col = ListProperty([1, 1, 1, 1])
-
-    def __init__(self, **kwargs):
-        super(CardResult, self).__init__(**kwargs)
-        Window.clearcolor = [0.25, 0.25, 0.25, 1]
+    color_identity = ListProperty()
 
     def refresh_view_attrs(self, rv, index, data):
         """Catch and handle the view changes"""
@@ -216,6 +213,7 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         self.card = data
         return super(CardResult, self).refresh_view_attrs(
             rv, index, data)
+        self.mana_cost = data['mana_cost']
 
     def create_type_line(self):
         res = self.type_line
@@ -233,10 +231,15 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         self.create_type_line()
 
     def on_mana_cost(self, instance, value):
-        if value is None:
-            return
+        print(self.name, value)
+        if self.card is not None:
+            print(self.index, self.card['name'], self.card['mana_cost'])
+        else:
+            print('card not set')
+        print()
         self.mana_render.mana_cost = value
-        colors = ['W', 'U', 'B', 'R', 'G']
+
+    def on_color_identity(self, instance, value):
         colorlookup = \
             {
                 'W': [211 / 255.0, 199 / 255.0, 183 / 255.0, 0.6],
@@ -248,15 +251,9 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
                 'Colorless': [171 / 255.0, 196 / 255.0, 210 / 255.0, 0.6]
             }
 
-        count = 0
-        l_col = 'Colorless'
-        for color in colors:
-            if color in value:
-                count += 1
-                l_col = color
-        if count == 1:
-            self.back_col = colorlookup[l_col]
-        elif count > 1:
+        if len(value) == 1:
+            self.back_col = colorlookup[value[0]]
+        elif len(value) > 1:
             self.back_col = colorlookup['Gold']
         else:
             self.back_col = colorlookup['Colorless']
@@ -265,7 +262,15 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 class ResultPage(RecycleView):
     def __init__(self, data, **kwargs):
         super(ResultPage, self).__init__(**kwargs)
+        Window.clearcolor = [0.25, 0.25, 0.25, 1]
         self.data = list(data)
+
+    def get_view(self, index, data_item, viewclass):
+        view = self.create_view(index, data_item, viewclass)
+        if view is None:
+            return
+
+        return view
 
 
 class SearchApp(App):

@@ -34,15 +34,15 @@
     neg_sel: neg_sel
     text_sel: text_sel
     orientation: 'horizontal'
-    FieldSelector:
-        id: field_sel
-        size_hint: 0.125, 1
     ConnectorSelector:
         id: conn_sel
         size_hint: 0.075, 1
     NegateSelector:
         id: neg_sel
         size_hint: 0.05, 1
+    FieldSelector:
+        id: field_sel
+        size_hint: 0.125, 1
     OperationSelector:
         id: op_sel
         size_hint: 0.125, 1
@@ -96,10 +96,12 @@
         orientation: 'vertical'
         size_hint: 0.25, 1
         Label:
+            text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, 0.5
             text: self.parent.parent.name
         Label:
+            text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, 0.5
             text: self.parent.parent.full_type_line

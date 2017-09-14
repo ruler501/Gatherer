@@ -312,7 +312,7 @@ if __name__ == "__main__":
         print(x['name'], x['set'],
               x['mana_cost'],
               str(x['power']) + '/' + str(x['toughness']),
-              x['type'],
+              x['type_line'],
               x['set_name'],
               x['text'],
               sep=": ")

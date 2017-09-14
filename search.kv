@@ -1,0 +1,108 @@
+<SearchScreen>:
+    SearchPage
+
+<SearchPage>:
+    orientation: 'vertical'
+    SearchFields:
+        id: rv
+        size_hint: 1, 10.0 / 12
+    Button:
+        text: '+'
+        size_hint: 1, 1.0 / 12
+        pos_hint: {'x_center': 0.5}
+        on_release: rv.add_row()
+    Button:
+        text: 'Search'
+        size_hint: 1, 1.0 / 12
+        on_release: rv.perform_search()
+
+<SearchFields>:
+    inner_layout: inner_layout
+    size_hint: 1, None
+    BoxLayout:
+        size_hint: 1, None
+        orientation: 'vertical'
+        id: inner_layout
+
+
+<FieldInput>:
+    size_hint: 1, None
+    height: 40
+    conn_sel: conn_sel
+    field_sel: field_sel
+    op_sel: op_sel
+    neg_sel: neg_sel
+    text_sel: text_sel
+    orientation: 'horizontal'
+    FieldSelector:
+        id: field_sel
+        size_hint: 0.1, 1
+    ConnectorSelector:
+        id: conn_sel
+        size_hint: 0.075, 1
+    NegateSelector:
+        id: neg_sel
+        size_hint: 0.05, 1
+    OperationSelector:
+        id: op_sel
+        size_hint: 0.125, 1
+    TextSelector:
+        id: text_sel
+        size_hint: 0.575, 1
+    Button:
+        text: 'X'
+        size_hint: 0.025, 1
+        on_release: self.parent.remove_row()
+
+<NegateSelector>:
+    orientation: 'vertical'
+    check: check
+    CheckBox:
+        id: check
+        pos_hint: {'center_x': 0.5}
+        color: [0, 0, 1, 1]
+        size_hint: 0.1, 0.5
+        on_active: self.parent.set_use_not(args[1])
+    Label:
+        color: [0, 0, 0, 1]
+        text: "Not"
+        size_hint: 0.1, 0.5
+        font_size: 14
+        pos_hint: {'center_x': 0.5}
+
+<ResultPage>:
+    viewclass: 'CardResult'
+    RecycleBoxLayout:
+        default_size: None, dp(112)
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+
+<CardResult>:
+    orientation: 'horizontal'
+    AsyncImage:
+        size_hint: 0.15, 1
+        source: self.parent.image_url
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint: 0.25, 1
+        Label:
+            color: 0, 0, 0, 1
+            size_hint: 1, 0.5
+            text: self.parent.parent.name
+        Label:
+            color: 0, 0, 0, 1
+            size_hint: 1, 0.5
+            text: self.parent.parent.full_type_line
+    BoxLayout:
+        orientation: 'vertical'
+        size_hint: 0.25, 1
+        Label:
+            color: 0, 0, 0, 1
+            size_hint: 1, 0.5
+            text: self.parent.parent.mana_cost
+        Label:
+            color: 0, 0, 0, 1
+            size_hint: 1, 0.5
+            text: self.parent.parent.set_name

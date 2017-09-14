@@ -1,15 +1,10 @@
 import ast
-import contextlib
 import functools
 import inspect
 import os
 import pickle
 import re
 import sqlite3
-
-from collections import Counter
-
-import mtgsdk
 
 
 def regexp(expr, item):
@@ -58,7 +53,7 @@ var_type = \
         'id': 'bytes',  # Can probably be hidden
         'layout': 'string',
         'set_name': 'string',
-        'power': 'int',
+        'power': 'string',
         'cmc': 'int',
         'name': 'string',
         'legalities': 'list',  # Of dicts(legality, format)
@@ -70,7 +65,8 @@ var_type = \
         'release_date': 'string',  # Effectively unused
         'original_type': 'string',
         'hand': 'int',  # Vanguard only
-        'toughness': 'int'
+        'toughness': 'string',
+        'type_line': 'string'
     }
 
 
@@ -125,62 +121,12 @@ get_conn.conn = None
 get_cursor.cursor = None
 
 
-def create_db(dest=DB):
-    cards = set(mtgsdk.Card.where(language="English").all())
-    mvid_count = Counter()
-    for card in cards:
-        mvid_count[card.multiverse_id] += 1
-    for mvid, count in mvid_count.items():
-        if count == 2:
-            dup = [card for card in cards if cards.multiverse_id == mvid]
-            if dup[0].name == dup[1].name:
-                pass
-            else:
-                cards.remove(dup[1])
-        elif count > 2:
-            dup = [card for card in cards if cards.multiverse_id == mvid]
-            next(dup)
-            for i in dup:
-                cards.remove(dup[i])
-
-    with contextlib.suppress(FileNotFoundError):
-        os.remove(dest)
-    conn = sqlite3.connect(dest)
-    c = conn.cursor()
-    create_command = "CREATE TABLE cards ("
-    vars_dict = vars(cards[0])
-    sql = 'INSERT INTO cards('
-    for var in cards_var:
-        create_command += '\n"' + var + '"'
-        try:
-            int(vars_dict[var])
-            create_command += ' int'
-        except:
-            create_command += ' text'
-        create_command += ','
-        sql += '"' + var + '",'
-    sql = sql[:-1]
-    sql += ')\nVALUES(' + '?,' * (len(cards_var) - 1) + '?)'
-    create_command = create_command[:-1]
-    create_command += '\n);'
-    if DEBUG:
-        print(create_command)
-    c.execute(create_command)
-    conn.commit()
-    cards = list(card for card in cards if card.multiverse_id is not None)
-    if DEBUG:
-        print(sql)
-        print(len(cards))
-    card_lists = [list(str(vars(card)[var]) for var in cards_var) for card in cards]
-    c.executemany(sql, card_lists)
-    conn.commit()
-    conn.close()
-
-
 def row_to_dict(row):
     res = {}
 
     for var, val in zip(cards_var, row):
+        if var == 'type':
+            var = 'type_line'
         if val is None or val == 'None':
             res[var] = None
         elif var_type[var] == 'int':
@@ -196,6 +142,7 @@ def row_to_dict(row):
     return res
 
 
+# Need to get tcgplayer partnership first so should probably make an app first
 def get_price(card):
     pass
 
@@ -234,6 +181,8 @@ class Cards:
 
         def _where(self, _lookup, **kwargs):
             for key, value in kwargs.items():
+                if key == 'type_line':
+                    key = 'type'
                 if key in cards_var:
                     if value is None:
                         value = "None"
@@ -359,8 +308,8 @@ if __name__ == "__main__":
         .find_all()
     cards = make_unique(cards, lambda x: x['name'])
 
-    for x in cards:
-        print(x['name'],
+    for x in sorted(cards, key=lambda x: x['toughness']):
+        print(x['name'], x['set'],
               x['mana_cost'],
               str(x['power']) + '/' + str(x['toughness']),
               x['type'],

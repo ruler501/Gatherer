@@ -36,7 +36,7 @@
     orientation: 'horizontal'
     FieldSelector:
         id: field_sel
-        size_hint: 0.1, 1
+        size_hint: 0.125, 1
     ConnectorSelector:
         id: conn_sel
         size_hint: 0.075, 1
@@ -48,7 +48,7 @@
         size_hint: 0.125, 1
     TextSelector:
         id: text_sel
-        size_hint: 0.575, 1
+        size_hint: 0.55, 1
     Button:
         text: 'X'
         size_hint: 0.025, 1
@@ -73,6 +73,7 @@
 <ResultPage>:
     viewclass: 'CardResult'
     RecycleBoxLayout:
+        spacing: dp(10)
         default_size: None, dp(112)
         default_size_hint: 1, None
         size_hint_y: None
@@ -80,7 +81,14 @@
         orientation: 'vertical'
 
 <CardResult>:
+    canvas.before:
+        Color:
+            rgba: self.back_col
+        Rectangle:
+            pos: self.pos
+            size: self.size
     orientation: 'horizontal'
+    mana_render: mana_render
     AsyncImage:
         size_hint: 0.15, 1
         source: self.parent.image_url
@@ -98,10 +106,9 @@
     BoxLayout:
         orientation: 'vertical'
         size_hint: 0.25, 1
-        Label:
-            color: 0, 0, 0, 1
+        ManaCost:
+            id: mana_render
             size_hint: 1, 0.5
-            text: self.parent.parent.mana_cost
         Label:
             color: 0, 0, 0, 1
             size_hint: 1, 0.5

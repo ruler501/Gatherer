@@ -1,10 +1,13 @@
 from kivy.app import App
 from kivy.core.window import Window
-from kivy.properties import BooleanProperty, NumericProperty, ObjectProperty, StringProperty
+from kivy.properties import BooleanProperty, ListProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
+from kivy.uix.image import AsyncImage
+from kivy.uix.label import Label
 from kivy.uix.recycleview import RecycleView
+from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen, ScreenManager
 from kivy.uix.scrollview import ScrollView
 from kivy.uix.textinput import TextInput
@@ -86,7 +89,8 @@ class ConnectorSelector(Button):
 
 
 class FieldSelector(Button):
-    fields = ['Text', 'Type Line', 'Name', 'Toughness']
+    fields = ['Text', 'Type Line', 'Name', 'Toughness', 'Flavor', 'Loyalty', 'Artist', 'Rarity',
+              'Set Name', 'CMC', 'Color Identity', 'Original Text', 'Original Type']
 
     def __init__(self, **kwargs):
         super(FieldSelector, self).__init__(**kwargs)
@@ -140,7 +144,6 @@ class SearchFields(ScrollView):
         self.inner_layout.add_widget(row)
 
     def remove_row(self, view):
-        print("Removing row", view)
         self.inner_layout.remove_widget(view)
         if len(self.inner_layout.children) > 0:
             self.inner_layout.children[0].delete_conn
@@ -157,35 +160,64 @@ class SearchFields(ScrollView):
         app = App.get_running_app()
         app.root.add_widget(next_screen)
         app.root.current = 'Results'
-        for card in cards:
-            print(card)
-            print()
 
 
 class SearchPage(BoxLayout):
     pass
 
 
-class CardResult(BoxLayout):
+class ManaCost(BoxLayout):
+    symbols = \
+        {
+            'W': 'W.png',
+            'U': 'U.png',
+            'B': 'B.png',
+            'R': 'R.png',
+            'G': 'G.png',
+        }
+    mana_cost = StringProperty('', allownone=True)
+
+    def on_mana_cost(self, instance, value):
+        if value is None:
+            return
+        self.clear_widgets()
+        mana_cost = value.replace('{', '').split('}')
+        for m in mana_cost:
+            m = str(m)
+            if len(m) == 0:
+                continue
+            if m in self.symbols:
+                self.add_widget(AsyncImage(source=self.symbols[m]))
+            else:
+                self.add_widget(Label(text=m, color=[0, 0, 0, 1]))
+
+
+class CardResult(BoxLayout, RecycleDataViewBehavior):
     name = StringProperty('')
     image_url = StringProperty('')
-    power = StringProperty('')
-    toughness = StringProperty('')
-    mana_cost = StringProperty('')
+    power = StringProperty('', allownone=True)
+    toughness = StringProperty('', allownone=True)
+    mana_cost = StringProperty('', allownone=True)
     set_name = StringProperty('')
     type_line = StringProperty('')
     full_type_line = StringProperty('')
     index = None
+    card = ObjectProperty()
+    mana_render = ObjectProperty()
+    back_col = ListProperty([1, 1, 1, 1])
+
+    def __init__(self, **kwargs):
+        super(CardResult, self).__init__(**kwargs)
+        Window.clearcolor = [0.25, 0.25, 0.25, 1]
 
     def refresh_view_attrs(self, rv, index, data):
         """Catch and handle the view changes"""
         self.index = index
-        print(data)
+        self.card = data
         return super(CardResult, self).refresh_view_attrs(
             rv, index, data)
 
     def create_type_line(self):
-        print('type', self.type_line, self.power, self.toughness)
         res = self.type_line
         if 'Creature' in res or 'Vehicle' in res:
             res += ' {}/{}'.format(self.power, self.toughness)
@@ -196,9 +228,38 @@ class CardResult(BoxLayout):
 
     def on_power(self, instance, value):
         self.create_type_line()
-    
+
     def on_toughness(self, instance, value):
         self.create_type_line()
+
+    def on_mana_cost(self, instance, value):
+        if value is None:
+            return
+        self.mana_render.mana_cost = value
+        colors = ['W', 'U', 'B', 'R', 'G']
+        colorlookup = \
+            {
+                'W': [211 / 255.0, 199 / 255.0, 183 / 255.0, 0.6],
+                'U': [11 / 255.0, 136 / 255.0, 201 / 255.0, 0.6],
+                'B': [92 / 255.0, 93 / 255.0, 96 / 255.0, 0.6],
+                'R': [138 / 255.0, 38 / 255.0, 6 / 255.0, 0.6],
+                'G': [66 / 255.0, 112 / 255.0, 76 / 255.0, 0.6],
+                'Gold': [221 / 255.0, 193 / 255.0, 130 / 255.0, 0.6],
+                'Colorless': [171 / 255.0, 196 / 255.0, 210 / 255.0, 0.6]
+            }
+
+        count = 0
+        l_col = 'Colorless'
+        for color in colors:
+            if color in value:
+                count += 1
+                l_col = color
+        if count == 1:
+            self.back_col = colorlookup[l_col]
+        elif count > 1:
+            self.back_col = colorlookup['Gold']
+        else:
+            self.back_col = colorlookup['Colorless']
 
 
 class ResultPage(RecycleView):

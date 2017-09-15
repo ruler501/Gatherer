@@ -39,7 +39,7 @@ var_type = \
         'life': 'int',  # Vanguard only
         'subtypes': 'list',
         'flavor': 'string',
-        'rulings': 'list',  # Of dicts(date, string)
+        'rulings': 'list',  # Of dicts(date, text)
         'mana_cost': 'string',  # In the form of ({.(/.)?})+
         'starter': 'text',  # What does this do?
         'names': 'list',  # Names for double faced cards

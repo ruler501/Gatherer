@@ -100,7 +100,6 @@ def row_to_dict(row):
         elif var_type[var] == 'int':
             try:
                 res[var] = int(val)
-                print("made {} an int with val {}".format(var, val))
             except ValueError:
                 res[var] = str(val)
         elif var_type[var] == 'list':

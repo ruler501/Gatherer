@@ -1,6 +1,8 @@
 import contextlib
 import os
+import pickle
 import sqlite3
+import sys
 
 import mtgsdk
 
@@ -11,9 +13,18 @@ from magic_db import DB, cards_var
 
 DEBUG = False
 
+LOCAL_CACHE = 'cards.tmp.cache'
+
 
 def create_db(dest=DB):
-    cards = set(mtgsdk.Card.where(language="English").all())
+    cards = set()
+    if os.path.exists(LOCAL_CACHE) and len(sys.argv) == 1:
+        with open(LOCAL_CACHE, 'rb') as inp:
+            cards = pickle.load(inp)
+    else:
+        cards = frozenset(mtgsdk.Card.where(language="English").all())
+        with open(LOCAL_CACHE, 'rb') as inp:
+            pickle.dump(cards, inp)
     mvid_count = Counter()
     for card in cards:
         mvid_count[card.multiverse_id] += 1
@@ -65,4 +76,4 @@ def create_db(dest=DB):
 
 
 if __name__ == '__main__':
-    create_db()
+    create_db(DB + '.new')

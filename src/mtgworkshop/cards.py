@@ -1,7 +1,8 @@
-from kivy.core.window import Window
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
+
+from configuration import DefaultConfiguration
 
 
 class CardScreen(Screen):
@@ -24,7 +25,6 @@ class CardScreen(Screen):
 
     def __init__(self, card, **kwargs):
         super(CardScreen, self).__init__(**kwargs)
-        self.size = Window.size
         self.card = card
         for key, val in card.items():
             setattr(self, key, val)
@@ -53,7 +53,7 @@ class CardScreen(Screen):
         self.rulings_box.height = 60 * len(value)
 
     def to_results(self):
-        self.manager.current = 'Results'
+        self.manager.current = DefaultConfiguration.last_screen
         self.manager.remove_widget(self)
 
 

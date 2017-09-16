@@ -6,6 +6,7 @@ from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 
 from cards import CardScreen
+from configuration import DefaultConfiguration
 from search import SearchScreen
 
 
@@ -18,7 +19,6 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     set_name = StringProperty('')
     type_line = StringProperty('')
     full_type_line = StringProperty('')
-    index = None
     card = ObjectProperty()
     mana_render = ObjectProperty()
     back_col = ListProperty([171 / 255.0, 196 / 255.0, 210 / 255.0, 0.6])
@@ -27,11 +27,9 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
     def refresh_view_attrs(self, rv, index, data):
         """Catch and handle the view changes"""
-        self.index = index
         self.card = data
         return super(CardResult, self).refresh_view_attrs(
             rv, index, data)
-        self.mana_cost = data['mana_cost']
 
     def set_back_col(self, colors):
         colorlookup = \
@@ -98,6 +96,7 @@ class ResultsScreen(Screen):
         self.b_layout.add_widget(self.back_button)
         self.b_layout.add_widget(self.results)
         self.add_widget(self.b_layout)
+        DefaultConfiguration.last_screen = "Results"
 
     def new_search(self, *args):
         self.manager.add_widget(SearchScreen(name="Search"))
@@ -106,6 +105,6 @@ class ResultsScreen(Screen):
 
 
 class ResultPage(RecycleView):
-    def __init__(self, data, **kwargs):
+    def __init__(self, data=[], **kwargs):
         super(ResultPage, self).__init__(**kwargs)
         self.data = list(data)

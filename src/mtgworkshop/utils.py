@@ -1,3 +1,6 @@
+import os
+import pickle
+
 from kivy.garden.androidtabs import AndroidTabsBase
 from kivy.properties import StringProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -56,3 +59,59 @@ class ManaCost(RelativeLayout):
 
 class MyTab(BoxLayout, AndroidTabsBase):
     pass
+
+
+def split_and_cut(s, txt, ind, *args):
+    """
+    Split a string on a sequence of txt arguments and pull out specific indexes.
+
+    Assumes at least one of find, sind is not None
+    """
+    ret_list = s.split(txt)
+    if isinstance(ind, tuple):
+        find, sind = ind
+        if find is None:
+            ret_list = ret_list[:sind]
+        elif sind is None:
+            ret_list = ret_list[find:]
+        else:
+            ret_list = ret_list[find:sind]
+        ret = txt.join(ret_list)
+    else:
+        ret = ret_list[ind]
+    if len(args) > 0:
+        return split_and_cut(ret, *args)
+    else:
+        return ret
+
+
+def disk_cache(cache_file):
+    def dec(fun):
+        cache = {}
+        if os.path.exists(cache_file):
+            with open(cache_file, 'rb') as inp:
+                cache = pickle.load(inp)
+
+        def f(*args, **kwargs):
+            args_tuple = frozenset(kwargs.items()), *args
+            res = cache.get(args_tuple, None)
+            if res is not None:
+                return res
+            res = fun(*args, **kwargs)
+            cache[args_tuple] = res
+            with open(cache_file, 'wb') as inp:
+                pickle.dump(cache, inp)
+            return res
+        return f
+    return dec
+
+
+def make_unique(lst, func=lambda x: x):
+    res = []
+    used = set()
+    for x in lst:
+        val = func(x)
+        if val not in used:
+            res.append(x)
+            used.add(val)
+    return res

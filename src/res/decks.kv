@@ -1,0 +1,30 @@
+<DeckScreen>:
+    id: screen
+    inner_layout: inner_layout
+    BoxLayout:
+        ScrollView:
+            size_hint: 1, 1
+            BoxLayout:
+                id: inner_layout
+                orientation: 'vertical'
+                size_hint: 1, None
+                Label:
+                    text: screen.deck_name
+                    pos_hint: {'center_x': 0.5}
+                    size_hint: None, None
+                    height: 20
+                Label:
+                    text: screen.counts
+                    pos_hint: {'center_x': 0.5}
+                    size_hint: None, None
+                    height: 20
+
+<BoardLabel>:
+    canvas.before:
+        Color:
+            rgba: 0.15, 0.15, 0.15, 1
+        Rectangle:
+            pos: self.pos
+            size: self.size
+    height: 20
+    size_hint: 1, None

@@ -1,94 +1,150 @@
-from collections import Counter
+import os
 
-import magic_db
+from collections import Counter, defaultdict
+
+from kivy.properties import ObjectProperty, StringProperty
+from kivy.uix.label import Label
+from kivy.uix.screenmanager import Screen
+
+from configuration import DefaultConfiguration
+from magic_db import Cards
+from utils import split_and_cut
 
 
-def split_and_cut(s, txt, ind, *args):
-    """
-    Split a string on a sequence of txt arguments and pull out specific indexes.
+class Deck:
+    def __init__(self, name='Untitled', file_location=None):
+        self.boards = defaultdict(Counter)
+        self.add_board('Main')
+        self.add_board('Sideboard')
+        self.name = name
+        self.file_location = file_location
 
-    Assumes at least one of find, sind is not None
-    """
-    ret_list = s.split(txt)
-    if isinstance(ind, tuple):
-        find, sind = ind
-        if find is None:
-            ret_list = ret_list[:sind]
-        elif sind is None:
-            ret_list = ret_list[find:]
+    def __getitem__(self, key):
+        return self.get_board(key)
+
+    def __len__(self):
+        return len(self.boards)
+
+    def add_board(self, board_name):
+        self.boards[board_name] = Counter()
+
+    def add_cards(self, board, *cards):
+        self.add_cards_by_mvid(self, board, *(card['multiverse_id'] for card in cards))
+
+    def add_cards_by_mvid(self, board, *mvids):
+        for mvid in mvids:
+            if isinstance(mvids, (tuple, list)):
+                self.boards[board][mvid[0]] += mvid[1]
+            else:
+                self.boards[board][mvid] += 1
+
+    def get_board(self, board):
+        return self.boards[board]
+
+    def get_board_counts(self):
+        return ((board, sum(cards.values())) for board, cards in self.boards.items())
+
+    def get_sorted(self,
+                   search_key=lambda x: Cards.default_sort_key(x[0])):
+        res = {}
+        for key, value in self.boards.items():
+            res[key] = sorted(((Cards.find_by_mvid(x), y) for x, y in value.items()),
+                              key=search_key)
+        return res
+
+    @staticmethod
+    def import_dec(fname):
+        """
+        Returns a Deck
+        """
+        trimmed_fname = split_and_cut(fname, '/', -1, '.dec', 0)
+        deck = Deck(name=trimmed_fname, file_location=fname)
+        with open(fname) as dec_file:
+            comment = True
+            for line in dec_file:
+                if comment:
+                    line = line.strip()
+                    mvid = split_and_cut(line, 'mvid:', 1, ' ', 0)
+                    qty = int(split_and_cut(line, 'qty:', 1, ' ', 0))
+                    loc = split_and_cut(line, 'loc:', 1, ' ', 0)
+                    if loc == 'Deck':
+                        loc = 'Main'
+                    elif loc == 'SB':
+                        loc = 'Sideboard'
+                    deck.add_cards_by_mvid(loc, (mvid, qty))
+                comment = not comment
+        return deck
+
+    @staticmethod
+    def export_dec(deck, fname, decked_compatible=False):
+        """
+        Saves a dec file at fname with all the ids translated into cards
+        """
+        boards = deck.get_sorted(lambda x: Cards.find_by_mvid(x[0])['name'])
+        res = []
+        for board, cards in sorted(boards.items()):
+            if decked_compatible:
+                if board == 'Main':
+                    board = 'Deck'
+                if board == 'Sideboard':
+                    board = 'SB'
+
+            for mvid, qty in cards:
+                res.append("///mvid:{0:} qty:{1:} name:{2:} loc:{3:}\n{1:} {2:}"
+                           .format(mvid, qty, Cards.find_by_mvid(mvid)['name']), board)
+        with open(fname, 'w') as out_file:
+            out_file.write('\n'.join(res))
+        return res
+
+
+class DeckScreen(Screen):
+    deck = ObjectProperty()
+
+    counts = StringProperty()
+    deck_name = StringProperty()
+
+    inner_layout = ObjectProperty()
+
+    def __init__(self, deck_name=None, **kwargs):
+        cached_deck_name = DefaultConfiguration.last_deck
+        if deck_name is not None:
+            self.deck = Deck.import_dec(deck_name)
+        elif cached_deck_name is not None and os.path.exists(cached_deck_name):
+            self.deck = Deck.import_dec(cached_deck_name)
         else:
-            ret_list = ret_list[find:sind]
-        ret = txt.join(ret_list)
-    else:
-        ret = ret_list[ind]
-    if len(args) > 0:
-        return split_and_cut(ret, *args)
-    else:
-        return ret
+            self.deck = Deck()
+        self.counts = ' '.join('{} {}'.format(deck, count) for deck, count in sorted(self.deck.get_board_counts()))
+        self.deck_name = self.deck.name
+        self.created_widgets = []
+        super(DeckScreen, self).__init__(**kwargs)
+
+    def on_enter(self, *args):
+        DefaultConfiguration.last_screen = "Deck"
+        DefaultConfiguration.current_deck = self.deck
+        DefaultConfiguration.last_deck = self.deck.file_location
+        super(DeckScreen, self).on_enter(*args)
+
+    def on_inner_layout(self, instance, value):
+        self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
+        from results import CardResult
+        if value is None:
+            return
+
+        for widget in self.created_widgets:
+            self.inner_layout.remove_widget(widget)
+        self.created_widgets = []
+
+        for board, cards in sorted(self.deck.get_sorted().items()):
+            label = BoardLabel(text=board)
+            self.inner_layout.add_widget(label)
+            self.created_widgets.append(label)
+
+            for card, qty in cards:
+                card_widget = CardResult(size_hint=(1, None))
+                card_widget.refresh_view_attrs(None, None, card)
+                self.inner_layout.add_widget(card_widget)
+                self.created_widgets.append(card_widget)
 
 
-def import_dec(fname):
-    """
-    Return a list of mvids of cards in the dec file with repetition
-    """
-    mvids = []
-    with open(fname) as rare_file:
-        comment = True
-        for line in rare_file:
-            if comment:
-                mvid = split_and_cut(line, 'mvid:', 1, ' ', 0)
-                qty = split_and_cut(line, 'qty:', 1, ' ', 0)
-                mvids += [mvid] * int(qty)
-            comment = not comment
-    return mvids
-
-
-def export_dec(ids, fname):
-    """
-    Saves a dec file at fname with all the ids translated into cards in the
-    main deck. Does not support sideboard
-    """
-    oc = Counter(ids)
-    res = []
-    for mvid, qty in oc.items():
-        res.append("///mvid:{0:} qty:{1:} name:{2:} loc:Deck\n{1:} {2:}"
-                   .format(mvid, qty, magic_db.Cards.find_by_mvid(mvid)['name']))
-    with open(fname, 'w') as of:
-        of.write('\n'.join(res))
-    return res
-
-
-def import_coll2(fname):
-    """
-    Return a list of mvids of cards in the coll2 file without repetition
-    """
-    mvids = []
-    with open(fname) as rare_file:
-        r = False
-        i = 0
-        for line in rare_file:
-            if i < 3:
-                i += 1
-                continue
-            if not r:
-                mvids.append(split_and_cut(line, 'id: ', 1).strip())
-            r = not r
-        return mvids
-
-
-def export_coll2(mvids, fname):
-    res = ['doc:', '- version: 1', '- items:']
-    mvids = sorted(mvids, key=lambda x: int(x))
-    for mvid in mvids:
-        res.append('  - - id: {}\n    - r: 1'.format(mvid))
-    with open(fname, 'w') as of:
-        of.write('\n'.join(res))
-    return res
-
-
-if __name__ == "__main__":
-    mvids = import_coll2("CommanderAllSets.coll2")
-    unique = magic_db.make_unique((x for x in mvids if magic_db.is_origin_legal(x)),
-                                  lambda x: magic_db.Cards.find_by_mvid(x)['name'])
-    print(len(unique))
-    export_coll2(unique, "Result.coll2")
+class BoardLabel(Label):
+    pass

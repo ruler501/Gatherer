@@ -1,10 +1,10 @@
 import ast
 import functools
 import inspect
-import os
-import pickle
 import re
 import sqlite3
+
+from utils import disk_cache
 
 
 def regexp(expr, item):
@@ -70,38 +70,6 @@ var_type = \
     }
 
 
-def disk_cache(cache_file):
-    def dec(fun):
-        cache = {}
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as inp:
-                cache = pickle.load(inp)
-
-        def f(*args, **kwargs):
-            args_tuple = frozenset(kwargs.items()), *args
-            res = cache.get(args_tuple, None)
-            if res is not None:
-                return res
-            res = fun(*args, **kwargs)
-            cache[args_tuple] = res
-            with open(cache_file, 'wb') as inp:
-                pickle.dump(cache, inp)
-            return res
-        return f
-    return dec
-
-
-def make_unique(lst, func=lambda x: x):
-    res = []
-    used = set()
-    for x in lst:
-        val = func(x)
-        if val not in used:
-            res.append(x)
-            used.add(val)
-    return res
-
-
 def get_conn():
     if get_conn.conn is None:
         get_conn.conn = sqlite3.connect(DB)
@@ -132,6 +100,7 @@ def row_to_dict(row):
         elif var_type[var] == 'int':
             try:
                 res[var] = int(val)
+                print("made {} an int with val {}".format(var, val))
             except ValueError:
                 res[var] = str(val)
         elif var_type[var] == 'list':
@@ -272,6 +241,10 @@ class Cards:
         cards = Cards.where(name=card_name).find_all()
         return (x['multiverse_id'] for x in cards)
 
+    @staticmethod
+    def default_sort_key(card):
+        return (card['cmc'], card['name'])
+
 
 for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction):
     member_name = member[0]
@@ -295,26 +268,3 @@ def is_origin_legal(mvid):
                 print(printing, card['name'])
             return True
     return False
-
-
-if __name__ == "__main__":
-    cards = Cards.where(cmc=3)\
-        .where_contains(color_identity='U')\
-        .where_contains_all(text='draw card'.split())\
-        .where_at_least(toughness=2)\
-        .where_at_most(power=3)\
-        .negated().where_contains(**{'type': 'Wall'})\
-        .with_pred(lambda x: is_origin_legal)\
-        .find_all()
-    cards = make_unique(cards, lambda x: x['name'])
-
-    for x in sorted(cards, key=lambda x: x['toughness']):
-        print(x['name'], x['set'],
-              x['mana_cost'],
-              str(x['power']) + '/' + str(x['toughness']),
-              x['type_line'],
-              x['set_name'],
-              x['text'],
-              sep=": ")
-        print()
-    print(len(cards))

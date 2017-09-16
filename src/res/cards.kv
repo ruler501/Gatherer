@@ -1,0 +1,87 @@
+<CardScreen>:
+    id: screen
+    rulings_box: rulings_box
+    inner_layout: inner_layout
+    ScrollView:
+        size_hint: 1, None
+        size: (800, 600)
+        BoxLayout:
+            id: inner_layout
+            size_hint: 1,None
+            orientation: 'vertical'
+            spacing: dp(5)
+            AsyncImage:
+                source: screen.image_url
+                allow_stretch: True
+                keep_ratio: True
+                height: '4in'
+                size_hint: (1, None)
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: 1, None
+                height: 20
+                Label:
+                    color: 0, 0, 0, 1
+                    text: screen.name
+                    text_size: self.size
+                ManaCost:
+                    mana_cost: screen.mana_cost
+                    
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: 1, None
+                height: 20
+                Label:
+                    color: 0, 0, 0, 1
+                    text: screen.type_line
+                    text_size: self.size
+                Label:
+                    color: 0, 0, 0, 1
+                    text: screen.power_tough
+                    text_size: self.size
+            BoxLayout:
+                orientation: 'horizontal'
+                size_hint: 1, None
+                height: 20
+                Label:
+                    color: 0, 0, 0, 1
+                    text: screen.set_name
+                    text_size: self.size
+                Label:
+                    color: 0, 0, 0, 1
+                    text: screen.rarity
+                    text_size: self.size
+            MultiLineLabel:
+                size_hint: 1, None
+                color: 0, 0, 0, 1
+                text: screen.text
+                text_size: self.size
+            BoxLayout:
+                size_hint: 1, None
+                orientation: 'vertical'
+                spacing: 5
+                id: rulings_box
+            Button:
+                size_hint: 1, None
+                height: 30
+                text: "Return to Results"
+                on_release: screen.to_results()
+
+<RulingsBox>:
+    size_hint: 1, None
+    height: text_label.height
+    orientation: 'horizontal'
+    date_label: date_label
+    text_label: text_label
+    MultiLineLabel:
+        id: date_label
+        color: 0, 0, 0, 1
+        text: self.parent.date
+        text_size: (self.width, None)
+        size_hint: 0.15, None
+    MultiLineLabel:
+        id: text_label
+        color: 0, 0, 0, 1
+        text: self.parent.text
+        text_size: (self.width, None)
+        size_hint: 0.85, None

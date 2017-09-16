@@ -11,7 +11,7 @@ def regexp(expr, item):
     return re.search(item.lower(), expr.lower()) is not None
 
 
-DB = "cards.sqlite3"
+DB = "res/cards.sqlite3"
 origins = r'(ORI)|(BFZ)|(OGW)|(SOI)|(EMN)|(KLD)|(AER)|(AKH)|(HOU)|(DDP)|(DDQ)|(DDR)|(DDS)|(E01)|(C15)|(C16)|(C17)|(CN2)'
 origins_list = origins.replace('(', '').replace(')', '').split('|')
 DEBUG = True
@@ -104,7 +104,7 @@ def make_unique(lst, func=lambda x: x):
 
 def get_conn():
     if get_conn.conn is None:
-        get_conn.conn = sqlite3.connect('cards.sqlite3')
+        get_conn.conn = sqlite3.connect(DB)
         get_conn.conn.create_function("REGEXP", 2, regexp)
     return get_conn.conn
 
@@ -261,12 +261,12 @@ class Cards:
             return next(self.find_all())
 
     @staticmethod
-    @disk_cache('cards.mvid.cache')
+    @disk_cache('res/cards.mvid.cache')
     def find_by_mvid(mvid):
         return Cards.where(multiverse_id=mvid).find_one()
 
     @staticmethod
-    @disk_cache('printings.mvid.cache')
+    @disk_cache('res/printings.mvid.cache')
     def find_all_printings(mvid):
         card_name = Cards.find_by_mvid(mvid)['name']
         cards = Cards.where(name=card_name).find_all()

@@ -9,20 +9,26 @@
         orientation: 'vertical'
 
 <CardResult>:
+    id: result
     canvas.before:
         Color:
-            rgba: self.back_col
+            rgba: result.back_col
         Rectangle:
-            pos: self.pos
-            size: self.size
+            pos: result.pos
+            size: result.size
     orientation: 'horizontal'
-    mana_render: mana_render
     image: image
     AsyncImage:
         id: image
-        size_hint: 0.15, None
+        size_hint: None, None
         height: 100
-        source: self.parent.image_url
+        source: result.image_url
+    Label:
+        text: result.count
+        color: 0, 0, 0, 1
+        font_size: 64
+        size_hint: 0.035, None
+        height: 100
     BoxLayout:
         orientation: 'vertical'
         size_hint: 0.25, None
@@ -31,23 +37,23 @@
             color: 0, 0, 0, 1
             size_hint: 1, None
             height: 50
-            text: self.parent.parent.name
+            text: result.name
         Label:
             text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, None
             height: 50
-            text: self.parent.parent.full_type_line
+            text: result.full_type_line
     BoxLayout:
         orientation: 'vertical'
         size_hint: 0.25, 1
         ManaCost:
-            id: mana_render
             size_hint: 1, None
             height: 50
+            mana_cost: result.mana_cost
         Label:
             color: 0, 0, 0, 1
             size_hint: 1, None
             height: 50
-            text: self.parent.parent.set_name
+            text: result.set_name
             text_size: self.size

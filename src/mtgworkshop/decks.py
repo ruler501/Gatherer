@@ -52,6 +52,12 @@ class Deck:
                               key=search_key)
         return res
 
+    def format_count(self, name):
+        return str(sum(count
+                       for card, count
+                       in self.boards['Main'].items()
+                       if Cards.find_by_mvid(card)['name'] == name))
+
     @staticmethod
     def import_dec(fname):
         """

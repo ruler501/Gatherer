@@ -1,4 +1,7 @@
 import os
+from weakref import WeakMethod
+
+from collections import defaultdict
 
 
 CACHE_DIR = 'cache'
@@ -15,11 +18,13 @@ class ConfigurationManager:
             {
                 'uncacheable',
                 'config_file',
-                'cached_values'
+                'cached_values',
+                'listeners'
             }
         object.__setattr__(self, 'uncacheable', uncacheable)
         object.__setattr__(self, 'config_file', config_file)
         object.__setattr__(self, 'cached_values', set())
+        object.__setattr__(self, 'listeners', defaultdict(set))
         if os.path.exists(config_file):
             with open(config_file) as conf:
                 for line in conf:
@@ -43,9 +48,20 @@ class ConfigurationManager:
         if key in self.cached_values:
             with open(self.config_file, 'w') as conf:
                 conf.write('\n'.join('{}={}'.format(key, getattr(self, key)) for key in self.cached_values))
+        dead_listeners = set()
+        for listener in self.listeners[key]:
+            f = listener()
+            if f is None:
+                dead_listeners.add(f)
+            else:
+                f(val)
+        self.listeners[key] = self.listeners[key] - dead_listeners
 
     def add_uncacheable_key(self, key):
         self.uncacheable.add(key)
+
+    def register_listener(self, key, callback):
+        self.listeners[key].add(WeakMethod(callback))
 
 
 DefaultConfiguration = ConfigurationManager(DEFAULT_CACHE_FILE)

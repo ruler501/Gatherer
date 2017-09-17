@@ -25,11 +25,20 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     color_identity = ObjectProperty(allownone=True)
     image = ObjectProperty()
 
+    count = StringProperty()
+
     def refresh_view_attrs(self, rv, index, data):
         """Catch and handle the view changes"""
         self.card = data
+        self.refresh_count(DefaultConfiguration.current_deck)
+        DefaultConfiguration.register_listener('current_deck', self.refresh_count)
         return super(CardResult, self).refresh_view_attrs(
             rv, index, data)
+
+    def refresh_count(self, current_deck):
+        if current_deck is not None:
+            self.count = current_deck.format_count(self.card['name'])
+            print(self.card['name'], self.count)
 
     def set_back_col(self, colors):
         colorlookup = \
@@ -67,9 +76,6 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
     def on_toughness(self, instance, value):
         self.create_type_line()
-
-    def on_mana_cost(self, instance, value):
-        self.mana_render.mana_cost = value
 
     def on_color_identity(self, instance, value):
         self.set_back_col(value)

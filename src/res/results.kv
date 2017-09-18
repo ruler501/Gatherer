@@ -1,5 +1,6 @@
 <ResultPage>:
     viewclass: 'CardResult'
+    scroll_wheel_distance: 40
     RecycleBoxLayout:
         spacing: dp(10)
         default_size: None, dp(100)
@@ -11,18 +12,21 @@
 <CardResult>:
     id: result
     canvas.before:
-        Color:
-            rgba: result.back_col
         Rectangle:
             pos: result.pos
             size: result.size
+            texture: result.back_texture
     orientation: 'horizontal'
     image: image
-    AsyncImage:
+    CachedImage:
         id: image
         size_hint: None, None
         height: 100
+        allow_stretch: True
+        keep_ratio: True
         source: result.image_url
+        original_size: 233, 311
+        crop_to: 15, 35, 190, 140
     Label:
         text: result.count
         color: 0, 0, 0, 1
@@ -57,3 +61,13 @@
             height: 50
             text: result.set_name
             text_size: self.size
+
+<CachedCardArt>:
+    id: cache
+    sub_image: image
+    CardArt:
+        id: image
+        source: cache.image_location
+        height: cache.height
+        allow_stretch: cache.allow_stretch
+        keep_ratio: cache.keep_ratio

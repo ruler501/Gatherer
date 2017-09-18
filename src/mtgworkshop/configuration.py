@@ -44,10 +44,13 @@ class ConfigurationManager:
         if getattr(self, key) is None and \
                 key not in self.uncacheable:
             self.cached_values.add(key)
+
         object.__setattr__(self, key, val)
+
         if key in self.cached_values:
             with open(self.config_file, 'w') as conf:
                 conf.write('\n'.join('{}={}'.format(key, getattr(self, key)) for key in self.cached_values))
+
         dead_listeners = set()
         for listener in self.listeners[key]:
             f = listener()

@@ -1,4 +1,4 @@
-from kivy.properties import ListProperty, ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.recycleview import RecycleView
@@ -8,6 +8,7 @@ from kivy.uix.screenmanager import Screen
 from cards import CardScreen
 from configuration import DefaultConfiguration
 from search import SearchScreen
+from utils import Gradient
 
 
 class CardResult(BoxLayout, RecycleDataViewBehavior):
@@ -21,8 +22,9 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     full_type_line = StringProperty('')
     card = ObjectProperty()
     mana_render = ObjectProperty()
-    back_col = ListProperty([171 / 255.0, 196 / 255.0, 210 / 255.0, 0.6])
+    back_texture = ObjectProperty(Gradient.horizontal([148, 162, 173, 255]))
     color_identity = ObjectProperty(allownone=True)
+
     image = ObjectProperty()
 
     count = StringProperty()
@@ -38,29 +40,29 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     def refresh_count(self, current_deck):
         if current_deck is not None:
             self.count = current_deck.format_count(self.card['name'])
-            print(self.card['name'], self.count)
 
-    def set_back_col(self, colors):
+    def set_back_texture(self, colors):
         colorlookup = \
             {
-                'W': [211 / 255.0, 199 / 255.0, 183 / 255.0, 0.6],
-                'U': [11 / 255.0, 136 / 255.0, 201 / 255.0, 0.6],
-                'B': [92 / 255.0, 93 / 255.0, 96 / 255.0, 0.6],
-                'R': [138 / 255.0, 38 / 255.0, 6 / 255.0, 0.6],
-                'G': [66 / 255.0, 112 / 255.0, 76 / 255.0, 0.6],
-                'Gold': [221 / 255.0, 193 / 255.0, 130 / 255.0, 0.6],
-                'Colorless': [171 / 255.0, 196 / 255.0, 210 / 255.0, 0.6]
+                'W': [211, 199, 183, 255],
+                'U': [11, 136, 201, 255],
+                'B': [92, 93, 96, 255],
+                'R': [167, 46, 8, 255],
+                'G': [66, 112, 76, 255],
+                'Gold': [221, 193, 130, 255],
+                'Colorless': [148, 162, 173, 255]
             }
-        if colors is None:
-            self.back_col = colorlookup['Colorless']
-            return None
+        color_order = ['W', 'U', 'B', 'R', 'G']
 
-        if len(colors) == 1:
-            self.back_col = colorlookup[colors[0]]
+        color_vals = [colorlookup['Colorless']]
+        if colors is None or len(colors) == 0:
+            color_vals = [colorlookup['Colorless']]
+        elif len(colors) == 1:
+            color_vals = [colorlookup[colors[0]]]
         elif len(colors) > 1:
-            self.back_col = colorlookup['Gold']
-        else:
-            self.back_col = colorlookup['Colorless']
+            color_vals = [colorlookup[x] for x in sorted(colors, key=color_order.index)]
+
+        self.back_texture = Gradient.horizontal(*color_vals)
 
     def create_type_line(self):
         res = self.type_line
@@ -78,7 +80,7 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         self.create_type_line()
 
     def on_color_identity(self, instance, value):
-        self.set_back_col(value)
+        self.set_back_texture(value)
 
     def on_touch_down(self, touch):
         if self.image.collide_point(*touch.pos):

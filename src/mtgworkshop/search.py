@@ -139,7 +139,7 @@ class SearchPage(ScrollView):
         for i, child in enumerate(self.inner_layout.children):
             query = child.update_query(i, query)
 
-        cards = query.find_all()
+        cards = sorted(query.find_all(), key=Cards.default_sort_key)
         next_page = ResultsScreen(cards, name="Results")
         self.parent.parent.manager.add_widget(next_page)
         self.parent.parent.manager.current = 'Results'

@@ -31,6 +31,19 @@ class WorkshopApp(App):
 
         return android_tabs
 
+    def on_start(self):
+        import builtins
+        prof = self.prof = builtins.__dict__.get('profile', None)
+        if prof is not None:
+            print("Profiling")
+            prof.enable_profile_all()
+            prof.enable()
+
+    def on_stop(self):
+        prof = self.prof
+        if prof is not None:
+            prof.disable()
+
 
 if __name__ == '__main__':
     Window.clearcolor = [0.6, 0.6, 0.6, 1]

@@ -96,8 +96,9 @@ class Deck:
                     board = 'SB'
 
             for mvid, qty in cards:
-                res.append("///mvid:{0:} qty:{1:} name:{2:} loc:{3:}\n{1:} {2:}"
-                           .format(mvid, qty, Cards.find_by_mvid(mvid)['name']), board)
+                res.append("///mvid:{0:} qty:{1:} name:{2:} loc:{3:}\n{4:}{1:} {2:}"
+                           .format(mvid, qty, Cards.find_by_mvid(mvid)['name']), board,
+                           '' if not decked_compatible else 'SB:' if board == 'SB' else '')
         with open(fname, 'w') as out_file:
             out_file.write('\n'.join(res))
         return res
@@ -112,17 +113,27 @@ class DeckScreen(Screen):
     inner_layout = ObjectProperty()
 
     def __init__(self, deck_name=None, **kwargs):
+        self.created_widgets = []
         cached_deck_name = DefaultConfiguration.last_deck
         if deck_name is not None:
-            self.deck = Deck.import_dec(deck_name)
+            self.load_deck(deck_name)
         elif cached_deck_name is not None and os.path.exists(cached_deck_name):
-            self.deck = Deck.import_dec(cached_deck_name)
+            self.load_deck(cached_deck_name)
         else:
+            self.load_deck(None)
+        # DefaultConfiguration.register_listener('last_deck', self.load_deck)
+        super(DeckScreen, self).__init__(**kwargs)
+
+    def load_deck(self, deck_name):
+        if deck_name is None:
             self.deck = Deck()
+        else:
+            self.deck = Deck.import_dec(deck_name)
+
         self.counts = ' '.join('{} {}'.format(deck, count) for deck, count in sorted(self.deck.get_board_counts()))
         self.deck_name = self.deck.name
-        self.created_widgets = []
-        super(DeckScreen, self).__init__(**kwargs)
+        if self.inner_layout is not None:
+            self.on_inner_layout(None, self.inner_layout)
 
     def on_enter(self, *args):
         DefaultConfiguration.last_screen = "Deck"

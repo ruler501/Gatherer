@@ -18,6 +18,7 @@ class Deck:
         self.add_board('Sideboard')
         self.name = name
         self.file_location = file_location
+        self.listeners = set()
 
     def __getitem__(self, key):
         return self.get_board(key)
@@ -121,7 +122,7 @@ class DeckScreen(Screen):
             self.load_deck(cached_deck_name)
         else:
             self.load_deck(None)
-        # DefaultConfiguration.register_listener('last_deck', self.load_deck)
+        DefaultConfiguration.register_listener('last_deck', self.load_deck)
         super(DeckScreen, self).__init__(**kwargs)
 
     def load_deck(self, deck_name):

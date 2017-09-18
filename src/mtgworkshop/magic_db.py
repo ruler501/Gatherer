@@ -14,8 +14,8 @@ def regexp(expr, item):
 DB = "res/cards.sqlite3"
 origins = r'(ORI)|(BFZ)|(OGW)|(SOI)|(EMN)|(KLD)|(AER)|(AKH)|(HOU)|(DDP)|(DDQ)|(DDR)|(DDS)|(E01)|(C15)|(C16)|(C17)|(CN2)'
 origins_list = origins.replace('(', '').replace(')', '').split('|')
-DEBUG = True
-# DEBUG = False
+# DEBUG = True
+DEBUG = False
 cards_var = ("printings", "rarity", "border", "watermark",
              "loyalty", "set", "multiverse_id", "text", "type",
              "life", "subtypes", "flavor", "rulings", "mana_cost",
@@ -158,6 +158,8 @@ class Cards:
                     if self.use_not:
                         self.query += ' NOT '
                         self.use_not = False
+                    if isinstance(value, str):
+                        value = value.replace('\\', '\\\\').replace("'", "\\'")
                     self.query += self.ops[_lookup].format(key, value)
                 elif key in self.calculated_vars:
                     # Add a predicate that calculates the value from card

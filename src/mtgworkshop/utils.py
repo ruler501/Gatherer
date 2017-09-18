@@ -6,6 +6,7 @@ import urllib.request
 
 from threading import Thread
 
+from kivy.clock import mainthread
 from kivy.garden.androidtabs import AndroidTabsBase
 from kivy.graphics.texture import Texture
 from kivy.properties import BooleanProperty, ListProperty, ObjectProperty, StringProperty
@@ -93,24 +94,31 @@ def split_and_cut(s, txt, ind, *args):
 
 
 def disk_cache(cache_file):
-    def dec(fun):
-        cache = {}
-        if os.path.exists(cache_file):
-            with open(cache_file, 'rb') as inp:
-                cache = pickle.load(inp)
+    class Decorator:
+        def __init__(self, func):
+            self.f = func
+            self.cache = {}
+            self.to_disk = True
+            if os.path.exists(cache_file):
+                with open(cache_file, 'rb') as inp:
+                    self.cache = pickle.load(inp)
 
-        def f(*args, **kwargs):
+        def save_to_disk(self):
+            with open(self.cache_file, 'wb') as inp:
+                pickle.dump(self.cache, inp)
+
+        def __call__(self, *args, **kwargs):
             args_tuple = frozenset(kwargs.items()), *args
-            res = cache.get(args_tuple, None)
+            res = self.cache.get(args_tuple, None)
             if res is not None:
                 return res
-            res = fun(*args, **kwargs)
-            cache[args_tuple] = res
-            with open(cache_file, 'wb') as inp:
-                pickle.dump(cache, inp)
+            res = self.f(*args, **kwargs)
+            self.cache[args_tuple] = res
+            if self.to_disk:
+                self.save_to_disk()
             return res
-        return f
-    return dec
+    Decorator.cache_file = cache_file
+    return Decorator
 
 
 def make_unique(lst, func=lambda x: x):
@@ -220,7 +228,11 @@ class CachedImage(BoxLayout):
             res += self.image_format
         return self.cache_path.format(res)
 
+    @mainthread
+    def set_image_location(self, value):
+        self.image_location = value
+
     def download_image(self, value):
         cache_path = self.get_cached_path(value)
         urllib.request.urlretrieve(value, cache_path)
-        self.image_location = cache_path
+        self.set_image_location(cache_path)

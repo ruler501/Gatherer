@@ -1,4 +1,6 @@
 import contextlib
+import itertools
+import math
 import os
 import pickle
 import sqlite3
@@ -8,7 +10,7 @@ import mtgsdk
 
 from collections import Counter
 
-from magic_db import DB, cards_var
+from magic_db import DB, cards_var, Cards
 
 
 DEBUG = False
@@ -75,5 +77,26 @@ def create_db(dest=DB):
     conn.close()
 
 
+def populate_cache():
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute('SELECT multiverse_id FROM cards;')
+    res = list(itertools.chain(*list(c.fetchall())))
+    total_len = len(res)
+    percent_point = math.ceil(total_len / 1000)
+    Cards.find_by_mvid.to_disk = False
+    try:
+        for i, mvid in enumerate(res):
+            if i % percent_point == 0:
+                print(i / percent_point / 10)
+            # if i & 32 == 32:
+            #     print(i, 100 * i / f_total_len)
+            Cards.find_by_mvid(mvid)
+    finally:
+        print(total_len)
+        Cards.find_by_mvid.save_to_disk()
+
+
 if __name__ == '__main__':
-    create_db(DB + '.new')
+    # create_db(DB + '.new')
+    populate_cache()

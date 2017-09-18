@@ -1,4 +1,4 @@
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.recycleview import RecycleView
@@ -24,18 +24,27 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     mana_render = ObjectProperty()
     back_texture = ObjectProperty(Gradient.horizontal([148, 162, 173, 255]))
     color_identity = ObjectProperty(allownone=True)
+    life = NumericProperty('', allownone=True)
+    hand = NumericProperty('', allownone=True)
 
     image = ObjectProperty()
 
     count = StringProperty()
 
+    def __init__(self, **kwargs):
+        self.registered_listener = False
+        super(CardResult, self).__init__(**kwargs)
+
     def refresh_view_attrs(self, rv, index, data):
         """Catch and handle the view changes"""
+        print(data['name'], data['set_name'])
         self.card = data
-        self.refresh_count(DefaultConfiguration.current_deck)
-        DefaultConfiguration.register_listener('current_deck', self.refresh_count)
         return super(CardResult, self).refresh_view_attrs(
             rv, index, data)
+        self.refresh_count(DefaultConfiguration.current_deck)
+        if not self.registered_listener:
+            DefaultConfiguration.register_listener('current_deck', self.refresh_count)
+            self.registered_listener = True
 
     def refresh_count(self, current_deck):
         if current_deck is not None:
@@ -68,6 +77,8 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         res = self.type_line
         if 'Creature' in res or 'Vehicle' in res:
             res += ' {}/{}'.format(self.power, self.toughness)
+        elif self.life is not None and self.hand is not None:
+            res += ' {}/{}'.format(int(self.life), int(self.hand))
         self.full_type_line = res
 
     def on_type_line(self, instance, value):
@@ -81,6 +92,12 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
     def on_color_identity(self, instance, value):
         self.set_back_texture(value)
+
+    def on_life(self, instance, value):
+        self.create_type_line()
+
+    def on_hand(self, instance, value):
+        self.create_type_line()
 
     def on_touch_down(self, touch):
         if self.image.collide_point(*touch.pos):

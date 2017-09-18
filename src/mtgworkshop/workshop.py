@@ -4,6 +4,7 @@ from kivy.garden.androidtabs import AndroidTabs
 from kivy.lang.builder import Builder
 from kivy.uix.screenmanager import ScreenManager
 
+from configuration import ConfigurationScreen
 from decks import DeckScreen
 from search import SearchScreen
 from utils import MyTab
@@ -27,6 +28,9 @@ class WorkshopApp(App):
         android_tabs.add_widget(tab2)
 
         tab3 = MyTab(text="Settings")
+        sm = ScreenManager()
+        sm.add_widget(ConfigurationScreen())
+        tab3.add_widget(sm)
         android_tabs.add_widget(tab3)
 
         return android_tabs

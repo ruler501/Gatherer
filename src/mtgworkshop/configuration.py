@@ -1,7 +1,7 @@
 import os
-from weakref import WeakMethod
 
 from collections import defaultdict
+from weakref import WeakMethod
 
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -63,7 +63,7 @@ class ConfigurationManager:
                 dead_listeners.add(f)
             else:
                 f(val)
-        self.listeners[key] = self.listeners[key] - dead_listeners
+        self.listeners[key] -= dead_listeners
 
     def add_uncacheable_key(self, key):
         self.uncacheable.add(key)

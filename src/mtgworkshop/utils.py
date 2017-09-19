@@ -9,7 +9,7 @@ from threading import Thread
 from kivy.clock import mainthread
 from kivy.garden.androidtabs import AndroidTabsBase
 from kivy.graphics.texture import Texture
-from kivy.properties import BooleanProperty, ListProperty, ObjectProperty, StringProperty
+from kivy.properties import BooleanProperty, ListProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
@@ -196,8 +196,6 @@ class CachedImage(BoxLayout):
     source = StringProperty()
     original_size = ListProperty(None, allownone=True)
     crop_to = ListProperty(None, allownone=True)
-
-    sub_image = ObjectProperty(allownone=True)
 
     cache_path = 'cache/images/{}'
 

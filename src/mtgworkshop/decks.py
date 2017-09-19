@@ -1,7 +1,9 @@
 import os
 
 from collections import Counter, defaultdict
+from weakref import WeakMethod
 
+from kivy.clock import mainthread
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
@@ -30,14 +32,30 @@ class Deck:
         self.boards[board_name] = Counter()
 
     def add_cards(self, board, *cards):
-        self.add_cards_by_mvid(self, board, *(card['multiverse_id'] for card in cards))
+        self.add_cards_by_mvid(board, *(card['multiverse_id'] for card in cards))
 
     def add_cards_by_mvid(self, board, *mvids):
         for mvid in mvids:
-            if isinstance(mvids, (tuple, list)):
-                self.boards[board][mvid[0]] += mvid[1]
-            else:
-                self.boards[board][mvid] += 1
+            r_mvid, count = mvid, 1
+            if isinstance(mvid, (tuple, list)):
+                r_mvid, count = mvid
+            self.boards[board][r_mvid] += count
+        self.call_listeners()
+
+    def remove_cards(self, board, *cards):
+        self.remove_cards_by_mvid(board, *(card['multiverse_id'] for card in cards))
+
+    def remove_cards_by_mvid(self, board, *mvids):
+        for mvid in mvids:
+            r_mvid, count = mvid, 1
+            if isinstance(mvid, (tuple, list)):
+                r_mvid, count = mvid
+            self.boards[board][r_mvid] -= count
+
+            if self.boards[board][r_mvid] <= 0:
+                del self.boards[board][r_mvid]
+
+        self.call_listeners()
 
     def get_board(self, board):
         return self.boards[board]
@@ -46,18 +64,37 @@ class Deck:
         return ((board, sum(cards.values())) for board, cards in self.boards.items())
 
     def get_sorted(self,
-                   search_key=lambda x: Cards.default_sort_key(x[0])):
+                   key=lambda x: Cards.default_sort_key(x[0])):
         res = {}
-        for key, value in self.boards.items():
-            res[key] = sorted(((Cards.find_by_mvid(x), y) for x, y in value.items()),
-                              key=search_key)
+        for board, cards in self.boards.items():
+            card_objects = ((Cards.find_by_mvid(card), count) for card, count in cards.items())
+            res[board] = sorted(card_objects, key=key)
         return res
 
-    def format_count(self, name):
-        return str(sum(count
-                       for card, count
-                       in self.boards['Main'].items()
-                       if Cards.find_by_mvid(card)['name'] == name))
+    def format_count(self, name, board='Main'):
+        return str(sum(count for _, count in self.get_matching_cards(name, board)))
+
+    def get_matching_cards(self, name, board):
+        return ((card, count)
+                for card, count
+                in self.boards[board].items()
+                if Cards.find_by_mvid(card)['name'] == name)
+
+    def get_all_counts(self, name):
+        return {board: self.format_count(name, board) for board in self.boards}
+
+    def register_listener(self, callback):
+        self.listeners.add(WeakMethod(callback))
+
+    def call_listeners(self):
+        dead_listeners = set()
+        for listener in self.listeners:
+            call = listener()
+            if call is None:
+                dead_listeners.add(listener)
+            else:
+                call(self)
+        self.listeners -= dead_listeners
 
     @staticmethod
     def import_dec(fname):
@@ -71,7 +108,7 @@ class Deck:
             for line in dec_file:
                 if comment:
                     line = line.strip()
-                    mvid = split_and_cut(line, 'mvid:', 1, ' ', 0)
+                    mvid = int(split_and_cut(line, 'mvid:', 1, ' ', 0))
                     qty = int(split_and_cut(line, 'qty:', 1, ' ', 0))
                     loc = split_and_cut(line, 'loc:', 1, ' ', 0)
                     if loc == 'Deck':
@@ -82,12 +119,14 @@ class Deck:
                 comment = not comment
         return deck
 
-    @staticmethod
-    def export_dec(deck, fname, decked_compatible=False):
+    def export_dec(self, fname=None, decked_compatible=False):
         """
         Saves a dec file at fname with all the ids translated into cards
         """
-        boards = deck.get_sorted(lambda x: Cards.find_by_mvid(x[0])['name'])
+        if fname is None:
+            fname = self.file_location
+
+        boards = self.get_sorted(lambda x: x[0]['name'])
         res = []
         for board, cards in sorted(boards.items()):
             if decked_compatible:
@@ -96,13 +135,12 @@ class Deck:
                 if board == 'Sideboard':
                     board = 'SB'
 
-            for mvid, qty in cards:
+            for card, qty in cards:
                 res.append("///mvid:{0:} qty:{1:} name:{2:} loc:{3:}\n{4:}{1:} {2:}"
-                           .format(mvid, qty, Cards.find_by_mvid(mvid)['name']), board,
-                           '' if not decked_compatible else 'SB:' if board == 'SB' else '')
+                           .format(card['multiverse_id'], qty, card['name'], board,
+                                   '' if not decked_compatible else 'SB:' if board == 'SB' else ''))
         with open(fname, 'w') as out_file:
             out_file.write('\n'.join(res))
-        return res
 
 
 class DeckScreen(Screen):
@@ -130,18 +168,25 @@ class DeckScreen(Screen):
             self.deck = Deck()
         else:
             self.deck = Deck.import_dec(deck_name)
+        DefaultConfiguration.current_deck = self.deck
+        self.deck.register_listener(self.update_deck)
+        self.update_deck(self.deck, save=False)
 
-        self.counts = ' '.join('{} {}'.format(deck, count) for deck, count in sorted(self.deck.get_board_counts()))
-        self.deck_name = self.deck.name
+    def update_deck(self, deck, save=True):
+        self.deck = deck
+        self.counts = ' '.join('{} {}'.format(board, count) for board, count in sorted(deck.get_board_counts()))
+        self.deck_name = deck.name
+        if save:
+            deck.export_dec()
         if self.inner_layout is not None:
             self.on_inner_layout(None, self.inner_layout)
 
     def on_enter(self, *args):
         DefaultConfiguration.last_screen = "Deck"
-        DefaultConfiguration.current_deck = self.deck
         DefaultConfiguration.last_deck = self.deck.file_location
         super(DeckScreen, self).on_enter(*args)
 
+    @mainthread
     def on_inner_layout(self, instance, value):
         self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
         from results import CardResult
@@ -158,7 +203,7 @@ class DeckScreen(Screen):
             self.created_widgets.append(label)
 
             for card, qty in cards:
-                card_widget = CardResult(size_hint=(1, None))
+                card_widget = CardResult(board=board, size_hint=(1, None))
                 card_widget.refresh_view_attrs(None, None, card)
                 self.inner_layout.add_widget(card_widget)
                 self.created_widgets.append(card_widget)

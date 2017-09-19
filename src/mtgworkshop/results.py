@@ -30,25 +30,27 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     image = ObjectProperty()
 
     count = StringProperty()
+    board = StringProperty('Main')
 
-    def __init__(self, **kwargs):
+    def __init__(self, board='Main', **kwargs):
         self.registered_listener = False
+        self.board = board
         super(CardResult, self).__init__(**kwargs)
 
     def refresh_view_attrs(self, rv, index, data):
         """Catch and handle the view changes"""
-        print(data['name'], data['set_name'])
         self.card = data
-        return super(CardResult, self).refresh_view_attrs(
+        super(CardResult, self).refresh_view_attrs(
             rv, index, data)
         self.refresh_count(DefaultConfiguration.current_deck)
         if not self.registered_listener:
             DefaultConfiguration.register_listener('current_deck', self.refresh_count)
+            DefaultConfiguration.current_deck.register_listener(self.refresh_count)
             self.registered_listener = True
 
     def refresh_count(self, current_deck):
         if current_deck is not None:
-            self.count = current_deck.format_count(self.card['name'])
+            self.count = current_deck.format_count(self.card['name'], self.board)
 
     def set_back_texture(self, colors):
         colorlookup = \

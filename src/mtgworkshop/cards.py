@@ -18,16 +18,38 @@ class CardScreen(Screen):
     set_name = StringProperty()
     type_line = StringProperty()
     rarity = StringProperty()
-    text = StringProperty()
+    text = StringProperty(allownone=True)
     rulings = ObjectProperty(allownone=True)
+    main_count = StringProperty('-')
+    side_count = StringProperty('-')
 
     power_tough = StringProperty()
 
     def __init__(self, card, **kwargs):
         super(CardScreen, self).__init__(**kwargs)
         self.card = card
+        self.update_deck(DefaultConfiguration.current_deck)
+
         for key, val in card.items():
             setattr(self, key, val)
+
+    def update_deck(self, deck):
+        if deck is None:
+            self.main_count = '-'
+            self.side_count = '-'
+            return
+
+        self.update_counts(deck)
+        deck.register_listener(self.update_counts)
+
+    def update_counts(self, deck):
+        if deck is None:
+            return
+
+        board_counts = deck.get_all_counts(self.name)
+
+        self.main_count = '{} Main'.format(board_counts['Main'])
+        self.side_count = '{} Side'.format(board_counts['Sideboard'])
 
     def on_inner_layout(self, instance, value):
         self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
@@ -55,6 +77,18 @@ class CardScreen(Screen):
     def to_results(self):
         self.manager.current = DefaultConfiguration.last_screen
         self.manager.remove_widget(self)
+
+    def add_card(self, board):
+        current_deck = DefaultConfiguration.current_deck
+        if current_deck is None:
+            return
+        current_deck.add_cards(board, self.card)
+
+    def remove_card(self, board):
+        current_deck = DefaultConfiguration.current_deck
+        if current_deck is None:
+            return
+        current_deck.remove_cards(board, self.card)
 
 
 class RulingsBox(BoxLayout):

@@ -61,6 +61,37 @@
                     orientation: 'vertical'
                     spacing: 5
                     id: rulings_box
+                BoxLayout:
+                    size_hint: 1, None
+                    orientation: 'horizontal'
+                    Button:
+                        text: '-'
+                        on_release: screen.remove_card('Sideboard')
+                        size_hint: 0.2, None
+                        height: 60
+                    Label:
+                        text: screen.side_count
+                        size_hint: 0.1, None
+                        height: 60
+                    Button:
+                        text: '+'
+                        on_release: screen.add_card('Sideboard')
+                        size_hint: 0.2, None
+                        height: 60
+                    Button:
+                        text: '-'
+                        on_release: screen.remove_card('Main')
+                        size_hint: 0.2, None
+                        height: 60
+                    Label:
+                        text: screen.main_count
+                        size_hint: 0.1, None
+                        height: 60
+                    Button:
+                        text: '+'
+                        on_release: screen.add_card('Main')
+                        size_hint: 0.2, None
+                        height: 60
                 Button:
                     size_hint: 1, None
                     height: 30

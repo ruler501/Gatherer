@@ -1,7 +1,14 @@
 <DeckScreen>:
     id: screen
     inner_layout: inner_layout
+    sort_sel: sort_sel
     BoxLayout:
+        orientation: 'vertical'
+        SortSelector:
+            pos_hint: {'right': 1}
+            size_hint: 0.25, 0.1
+            id: sort_sel
+            screen: screen
         ScrollView:
             scroll_wheel_distance: 40
             size_hint: 1, 1

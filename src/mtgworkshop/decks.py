@@ -5,6 +5,8 @@ from weakref import WeakMethod
 
 from kivy.clock import mainthread
 from kivy.properties import ObjectProperty, StringProperty
+from kivy.uix.button import Button
+from kivy.uix.dropdown import DropDown
 from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
@@ -63,12 +65,11 @@ class Deck:
     def get_board_counts(self):
         return ((board, sum(cards.values())) for board, cards in self.boards.items())
 
-    def get_sorted(self,
-                   key=lambda x: Cards.default_sort_key(x[0])):
+    def get_sorted(self, key=Cards.default_sort_key):
         res = {}
         for board, cards in self.boards.items():
             card_objects = ((Cards.find_by_mvid(card), count) for card, count in cards.items())
-            res[board] = sorted(card_objects, key=key)
+            res[board] = sorted(card_objects, key=lambda x: key(x[0]))
         return res
 
     def format_count(self, name, board='Main'):
@@ -143,6 +144,73 @@ class Deck:
             out_file.write('\n'.join(res))
 
 
+def rough_type(card):
+    if 'Land' in card['types']:
+        return 2
+    elif 'Creature' in card['types']:
+        return 0
+    else:
+        return 1
+
+
+def full_type(card):
+    if 'Land' in card['types']:
+        return 6
+    elif 'Creature' in card['types']:
+        return 0
+    elif 'Artifact' in card['types']:
+        return 1
+    elif 'Enchantment' in card['types']:
+        return 2
+    elif 'Sorcery' in card['types']:
+        return 3
+    elif 'Instant' in card['types']:
+        return 4
+    elif 'Planeswalker' in card['types']:
+        return 5
+    else:
+        return 7
+
+
+class SortSelector(Button):
+    sort_methods = \
+        {
+            'Creature/Spell/Land': lambda x: (rough_type(x), Cards.default_sort_key(x)),
+            'CMC': Cards.default_sort_key,
+            'Name': lambda x: x['name'],
+            'Type': lambda x: (full_type(x), Cards.default_sort_key(x)),
+            'Color Identity': lambda x: ([] if x['color_identity'] is None else
+                                         sorted(x['color_identity'],
+                                                key=lambda x: ['W', 'U', 'B', 'R', 'G'].index(x)),
+                                         Cards.default_sort_key(x)),
+            'Rarity': lambda x: (x['rarity'], Cards.default_sort_key(x)),
+            'Set Name': lambda x: (x['set_name'], Cards.default_sort_key(x))
+        }
+    screen = ObjectProperty()
+
+    def __init__(self, **kwargs):
+        super(SortSelector, self).__init__(**kwargs)
+        self.text = 'CMC'
+
+        self.drop_list = DropDown()
+        for conn in self.sort_methods:
+            btn = Button(text=conn, size_hint_y=None, height=30)
+            btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
+            btn.font_size = 16
+            self.drop_list.add_widget(btn)
+
+        self.bind(on_release=self.drop_list.open)
+
+        self.drop_list.bind(on_select=self.drop_select)
+
+    def drop_select(self, instance, text):
+        setattr(self, 'text', text)
+        self.screen.update_deck(self.screen.deck, save=False)
+
+    def get_sort(self):
+        return self.sort_methods[self.text]
+
+
 class DeckScreen(Screen):
     deck = ObjectProperty()
 
@@ -150,6 +218,7 @@ class DeckScreen(Screen):
     deck_name = StringProperty()
 
     inner_layout = ObjectProperty()
+    sort_sel = ObjectProperty()
 
     def __init__(self, deck_name=None, **kwargs):
         self.created_widgets = []
@@ -197,7 +266,7 @@ class DeckScreen(Screen):
             self.inner_layout.remove_widget(widget)
         self.created_widgets = []
 
-        for board, cards in sorted(self.deck.get_sorted().items()):
+        for board, cards in sorted(self.deck.get_sorted(key=self.sort_sel.get_sort()).items()):
             label = BoardLabel(text=board)
             self.inner_layout.add_widget(label)
             self.created_widgets.append(label)

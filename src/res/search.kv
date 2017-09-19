@@ -3,7 +3,7 @@
         orientation: 'vertical'
         SearchPage:
             id: rv
-            size_hint: 1, 10.0 / 12
+            size_hint: 1, 9.0 / 12
         Button:
             text: '+'
             size_hint: 1, 1.0 / 12
@@ -16,11 +16,17 @@
 
 <SearchPage>:
     inner_layout: inner_layout
+    sort_sel: sort_sel
     size_hint: 1, None
     BoxLayout:
         size_hint: 1, None
         orientation: 'vertical'
         id: inner_layout
+        SortSelector:
+            pos_hint: {'right': 1}
+            size_hint: 0.25, None
+            height: 30
+            id: sort_sel
 
 
 <FieldInput>:

@@ -186,7 +186,7 @@ class SortSelector(Button):
             'Rarity': lambda x: (x['rarity'], Cards.default_sort_key(x)),
             'Set Name': lambda x: (x['set_name'], Cards.default_sort_key(x))
         }
-    screen = ObjectProperty()
+    screen = ObjectProperty(None, allownone=True)
 
     def __init__(self, **kwargs):
         super(SortSelector, self).__init__(**kwargs)
@@ -205,7 +205,8 @@ class SortSelector(Button):
 
     def drop_select(self, instance, text):
         setattr(self, 'text', text)
-        self.screen.update_deck(self.screen.deck, save=False)
+        if self.screen is not None:
+            self.screen.update_deck(self.screen.deck, save=False)
 
     def get_sort(self):
         return self.sort_methods[self.text]

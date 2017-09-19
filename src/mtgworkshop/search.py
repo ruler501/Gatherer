@@ -121,6 +121,7 @@ class FieldInput(BoxLayout):
 
 class SearchPage(ScrollView):
     inner_layout = ObjectProperty()
+    sort_sel = ObjectProperty()
 
     def on_inner_layout(self, instance, value):
         self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
@@ -136,10 +137,13 @@ class SearchPage(ScrollView):
     def perform_search(self):
         from results import ResultsScreen
         query = Cards.CardsQuery()
-        for i, child in enumerate(self.inner_layout.children):
+        for i, child in enumerate(child
+                                  for child
+                                  in self.inner_layout.children
+                                  if isinstance(child, FieldInput)):
             query = child.update_query(i, query)
 
-        cards = sorted(query.find_all(), key=Cards.default_sort_key)
+        cards = sorted(query.find_all(), key=self.sort_sel.get_sort())
         next_page = ResultsScreen(cards, name="Results")
         self.parent.parent.manager.add_widget(next_page)
         self.parent.parent.manager.current = 'Results'

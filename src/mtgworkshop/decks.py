@@ -5,13 +5,14 @@ from weakref import WeakMethod
 
 from kivy.clock import mainthread
 from kivy.properties import ObjectProperty, StringProperty
+from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
-from kivy.uix.label import Label
 from kivy.uix.screenmanager import Screen
 
 from configuration import DefaultConfiguration
 from magic_db import Cards
+from results import CardResult
 from utils import split_and_cut
 
 
@@ -212,6 +213,34 @@ class SortSelector(Button):
         return self.sort_methods[self.text]
 
 
+class Board(BoxLayout):
+    title = StringProperty()
+
+    def __init__(self, cards, board='Main', **kwargs):
+        self.cache = []
+        self.board = board
+        super(Board, self).__init__(**kwargs)
+        self.bind(minimum_height=self.setter('height'))
+
+    def update_cards(self, cards):
+        for card, _ in cards[len(self.cache):]:
+            card_widget = CardResult(board=self.board, size_hint=(1, None))
+            self.add_widget(card_widget)
+            self.cache.append(card_widget)
+
+        for cached in self.cache[len(cards):][::-1]:
+            self.remove_widget(cached)
+        self.cache = self.cache[:len(cards)]
+
+        for cached, (card, _) in zip(self.cache, cards):
+            cached.refresh_view_attrs(None, None, card)
+
+        self.update_title(cards)
+
+    def update_title(self, cards):
+        self.title = '{}: {}'.format(self.board, sum(qty for c, qty in cards))
+
+
 class DeckScreen(Screen):
     deck = ObjectProperty()
 
@@ -224,6 +253,8 @@ class DeckScreen(Screen):
     def __init__(self, deck_name=None, **kwargs):
         self.created_widgets = []
         cached_deck_name = DefaultConfiguration.last_deck
+        self.bind_inner = True
+        self.boards = {}
         if deck_name is not None:
             self.load_deck(deck_name)
         elif cached_deck_name is not None and os.path.exists(cached_deck_name):
@@ -258,26 +289,14 @@ class DeckScreen(Screen):
 
     @mainthread
     def on_inner_layout(self, instance, value):
-        self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
-        from results import CardResult
-        if value is None:
-            return
+        if self.bind_inner:
+            self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
+            self.bind_inner = False
 
-        for widget in self.created_widgets:
-            self.inner_layout.remove_widget(widget)
-        self.created_widgets = []
-
-        for board, cards in sorted(self.deck.get_sorted(key=self.sort_sel.get_sort()).items()):
-            label = BoardLabel(text=board)
-            self.inner_layout.add_widget(label)
-            self.created_widgets.append(label)
-
-            for card, qty in cards:
-                card_widget = CardResult(board=board, size_hint=(1, None))
-                card_widget.refresh_view_attrs(None, None, card)
-                self.inner_layout.add_widget(card_widget)
-                self.created_widgets.append(card_widget)
-
-
-class BoardLabel(Label):
-    pass
+        boards = sorted(self.deck.get_sorted(key=self.sort_sel.get_sort()).items())
+        for name, cards in boards:
+            board = self.boards.get(name, None)
+            if board is None:
+                board = self.boards[name] = Board(cards, name)
+                self.inner_layout.add_widget(board)
+            board.update_cards(cards)

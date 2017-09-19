@@ -27,12 +27,18 @@
                     size_hint: None, None
                     height: 20
 
-<BoardLabel>:
-    canvas.before:
-        Color:
-            rgba: 0.15, 0.15, 0.15, 1
-        Rectangle:
-            pos: self.pos
-            size: self.size
-    height: 20
+<Board>:
+    orientation: 'vertical'
+    id: board
     size_hint: 1, None
+    Label:
+        canvas.before:
+            Color:
+                rgba: 0.15, 0.15, 0.15, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        height: 60
+        font_size: 40
+        size_hint: 1, None
+        text: board.title

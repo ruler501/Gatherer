@@ -24,8 +24,8 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     mana_render = ObjectProperty()
     back_texture = ObjectProperty(Gradient.horizontal([148, 162, 173, 255]))
     color_identity = ObjectProperty(allownone=True)
-    life = NumericProperty('', allownone=True)
-    hand = NumericProperty('', allownone=True)
+    # life = NumericProperty('', allownone=True)
+    # hand = NumericProperty('', allownone=True)
 
     image = ObjectProperty()
 
@@ -79,8 +79,8 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         res = self.type_line
         if 'Creature' in res or 'Vehicle' in res:
             res += ' {}/{}'.format(self.power, self.toughness)
-        elif self.life is not None and self.hand is not None:
-            res += ' {}/{}'.format(int(self.life), int(self.hand))
+        # elif self.life is not None and self.hand is not None:
+        #     res += ' {}/{}'.format(int(self.life), int(self.hand))
         self.full_type_line = res
 
     def on_type_line(self, instance, value):

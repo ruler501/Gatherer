@@ -1,9 +1,11 @@
+import functools
 import itertools
 import math
 import os
 import pickle
 import urllib.request
 
+from collections import defaultdict
 from threading import Thread
 
 from kivy.clock import mainthread
@@ -41,28 +43,39 @@ class ManaCost(RelativeLayout):
     mana_cost = StringProperty('', allownone=True)
     MANA_SIZE = 18
 
+    def __init__(self, **kwargs):
+        self.cache_images = defaultdict(list)
+        super(ManaCost, self).__init__(**kwargs)
+
     def on_mana_cost(self, instance, value):
         self.clear_widgets()
         if value is None:
             return
         mana_cost = value.replace('{', '').split('}')
         count = 0
+        pre_cache_images = defaultdict(list)
         for m in mana_cost:
             m = str(m)
             if len(m) == 0:
                 continue
-            if m in self.symbols:
-                self.add_widget(Image(source='res/{}.png'.format(m),
-                                      width=self.MANA_SIZE,
-                                      allow_stretch=True,
-                                      keep_ratio=True,
-                                      mipmap=True,
-                                      size_hint=(None, None),
-                                      pos=(self.MANA_SIZE * 1.1 * count, -self.MANA_SIZE * 2)))
-                count += 1
+            if len(self.cache_images[m]) > 0:
+                mana_image = self.cache_images[m].pop()
+                mana_image.pos = (self.MANA_SIZE * 1.1 * count, -self.MANA_SIZE * 2)
+            elif m in self.symbols:
+                mana_image = Image(source='res/{}.png'.format(m),
+                                   width=self.MANA_SIZE,
+                                   allow_stretch=True,
+                                   keep_ratio=True,
+                                   mipmap=True,
+                                   size_hint=(None, None),
+                                   pos=(self.MANA_SIZE * 1.1 * count, -self.MANA_SIZE * 2))
             else:
-                self.add_widget(Label(text=m, color=[0, 0, 0, 1], size=(32, 32), pos=(36 * count, 0)))
-                count += 1
+                mana_image = Label(text=m, color=[0, 0, 0, 1], size=(32, 32), pos=(36 * count, 0))
+            self.add_widget(mana_image)
+            pre_cache_images[m].append(mana_image)
+            count += 1
+        for m, cache in pre_cache_images.items():
+            self.cache_images[m] += cache
 
 
 class MyTab(BoxLayout, AndroidTabsBase):
@@ -234,3 +247,27 @@ class CachedImage(BoxLayout):
         cache_path = self.get_cached_path(value)
         urllib.request.urlretrieve(value, cache_path)
         self.set_image_location(cache_path)
+
+
+class ThreadWithReturnValue(Thread):
+    def __init__(self, group=None, target=None, name=None, args=(), kwargs=None, *, daemon=None):
+        Thread.__init__(self, group, target, name, args, kwargs, daemon=daemon)
+
+        self._return = None
+
+    def run(self):
+        if self._target is not None:
+            self._return = self._target(*self._args, **self._kwargs)
+
+    def join(self):
+        Thread.join(self)
+        return self._return
+
+
+def backgroundthread(func):
+    @functools.wraps(func)
+    def delayed_func(*args, **kwargs):
+        res = ThreadWithReturnValue(target=func, args=args, kwargs=kwargs)
+        res.start()
+        return res
+    return delayed_func

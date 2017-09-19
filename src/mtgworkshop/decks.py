@@ -222,12 +222,15 @@ class SortSelector(Button):
 class Board(BoxLayout):
     title = StringProperty()
 
+    screen = ObjectProperty()
+
     def __init__(self, cards, board='Main', **kwargs):
-        self.cache = []
         self.board = board
+        self.cache = []
         super(Board, self).__init__(**kwargs)
         self.bind(minimum_height=self.setter('height'))
 
+    @mainthread
     def update_cards(self, cards):
         for card, _ in cards[len(self.cache):]:
             card_widget = CardResult(board=self.board, size_hint=(1, None))
@@ -243,6 +246,7 @@ class Board(BoxLayout):
 
         self.update_title(cards)
 
+    @mainthread
     def update_title(self, cards):
         self.title = '{}: {}'.format(self.board, sum(qty for c, qty in cards))
 
@@ -260,6 +264,7 @@ class DeckScreen(Screen):
         self.created_widgets = []
         cached_deck_name = DefaultConfiguration.last_deck
         self.bind_inner = True
+        self.register_listener = True
         self.boards = {}
         if deck_name is not None:
             self.load_deck(deck_name)
@@ -267,7 +272,6 @@ class DeckScreen(Screen):
             self.load_deck(cached_deck_name)
         else:
             self.load_deck(None)
-        DefaultConfiguration.register_listener('last_deck', self.load_deck)
         super(DeckScreen, self).__init__(**kwargs)
 
     def load_deck(self, deck_name):
@@ -276,33 +280,38 @@ class DeckScreen(Screen):
         else:
             self.deck = Deck.import_dec(deck_name)
         DefaultConfiguration.current_deck = self.deck
+        DefaultConfiguration.last_deck = self.deck.file_location
         self.deck.register_listener(self.update_deck)
+        if self.register_listener:
+            DefaultConfiguration.register_listener('last_deck', self.load_deck)
+            self.register_listener = False
         self.update_deck(self.deck, save=False)
 
-    def update_deck(self, deck, save=True):
+    def update_deck(self, deck, save=True, *args):
         self.deck = deck
         self.counts = ' '.join('{} {}'.format(board, count) for board, count in sorted(deck.get_board_counts()))
         self.deck_name = deck.name
         if save:
             deck.export_dec()
-        if self.inner_layout is not None:
-            self.on_inner_layout(None, self.inner_layout)
+        self.update_boards()
 
     def on_enter(self, *args):
         DefaultConfiguration.last_screen = "Deck"
-        DefaultConfiguration.last_deck = self.deck.file_location
         super(DeckScreen, self).on_enter(*args)
+
+    @mainthread
+    def update_boards(self, *args):
+        boards = sorted(self.deck.get_sorted(key=self.sort_sel.get_sort()).items())
+        for name, cards in boards:
+            board = self.boards.get(name, None)
+            if board is None:
+                board = self.boards[name] = Board(cards, name)
+                board.screen = self
+                self.inner_layout.add_widget(board)
+            board.update_cards(cards)
 
     @mainthread
     def on_inner_layout(self, instance, value):
         if self.bind_inner:
             self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
             self.bind_inner = False
-
-        boards = sorted(self.deck.get_sorted(key=self.sort_sel.get_sort()).items())
-        for name, cards in boards:
-            board = self.boards.get(name, None)
-            if board is None:
-                board = self.boards[name] = Board(cards, name)
-                self.inner_layout.add_widget(board)
-            board.update_cards(cards)

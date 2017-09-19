@@ -28,6 +28,7 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     # hand = NumericProperty('', allownone=True)
 
     image = ObjectProperty()
+    screen = ObjectProperty(None, allownone=True)
 
     count = StringProperty()
     board = StringProperty('Main')
@@ -42,6 +43,8 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         self.card = data
         super(CardResult, self).refresh_view_attrs(
             rv, index, data)
+        if rv is not None:
+            self.screen = rv.parent.parent
         self.refresh_count(DefaultConfiguration.current_deck)
         if not self.registered_listener:
             DefaultConfiguration.register_listener('current_deck', self.refresh_count)
@@ -52,7 +55,24 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         if current_deck is not None:
             self.count = current_deck.format_count(self.card['name'], self.board)
 
-    def set_back_texture(self, colors):
+    def create_type_line(self):
+        res = self.type_line
+        if 'Creature' in res or 'Vehicle' in res:
+            res += ' {}/{}'.format(self.power, self.toughness)
+        # elif self.life is not None and self.hand is not None:
+        #     res += ' {}/{}'.format(int(self.life), int(self.hand))
+        self.full_type_line = res
+
+    def on_type_line(self, instance, value):
+        self.create_type_line()
+
+    def on_power(self, instance, value):
+        self.create_type_line()
+
+    def on_toughness(self, instance, value):
+        self.create_type_line()
+
+    def on_color_identity(self, instance, colors):
         colorlookup = \
             {
                 'W': [211, 199, 183, 255],
@@ -75,26 +95,6 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
         self.back_texture = Gradient.horizontal(*color_vals)
 
-    def create_type_line(self):
-        res = self.type_line
-        if 'Creature' in res or 'Vehicle' in res:
-            res += ' {}/{}'.format(self.power, self.toughness)
-        # elif self.life is not None and self.hand is not None:
-        #     res += ' {}/{}'.format(int(self.life), int(self.hand))
-        self.full_type_line = res
-
-    def on_type_line(self, instance, value):
-        self.create_type_line()
-
-    def on_power(self, instance, value):
-        self.create_type_line()
-
-    def on_toughness(self, instance, value):
-        self.create_type_line()
-
-    def on_color_identity(self, instance, value):
-        self.set_back_texture(value)
-
     def on_life(self, instance, value):
         self.create_type_line()
 
@@ -102,9 +102,8 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         self.create_type_line()
 
     def on_touch_down(self, touch):
-        if self.image.collide_point(*touch.pos):
-            rv = self.parent.parent
-            sc = rv.parent.parent
+        if self.image.collide_point(*touch.pos) and self.screen is not None:
+            sc = self.screen
             sc.manager.add_widget(CardScreen(self.card, name=self.card['name']))
             sc.manager.current = self.card['name']
 

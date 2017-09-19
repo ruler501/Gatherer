@@ -17,15 +17,31 @@
                 orientation: 'vertical'
                 size_hint: 1, None
                 Label:
+                    canvas.before:
+                        Color:
+                            rgba: 0.15, 0.15, 0.15, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
                     text: screen.deck_name
-                    pos_hint: {'center_x': 0.5}
-                    size_hint: None, None
-                    height: 20
+                    text_size: self.size
+                    halign: 'center'
+                    size_hint: 1, None
+                    height: 40
+                    font_size: 32
                 Label:
+                    canvas.before:
+                        Color:
+                            rgba: 0.15, 0.15, 0.15, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
                     text: screen.counts
-                    pos_hint: {'center_x': 0.5}
-                    size_hint: None, None
-                    height: 20
+                    text_size: self.size
+                    halign: 'center'
+                    size_hint: 1, None
+                    height: 40
+                    font_size: 32
 
 <Board>:
     orientation: 'vertical'

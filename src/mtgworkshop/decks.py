@@ -173,6 +173,14 @@ def full_type(card):
         return 7
 
 
+def color_identity_key(x):
+    color_list = ['W', 'U', 'B', 'R', 'G']
+    if x['color_identity'] is None:
+        return (0, [], Cards.default_sort_key(x))
+    int_colors = sorted(color_list.index(c) for c in x['color_identity'])
+    return (len(int_colors), int_colors, Cards.default_sort_key(x))
+
+
 class SortSelector(Button):
     sort_methods = \
         {
@@ -180,21 +188,19 @@ class SortSelector(Button):
             'CMC': Cards.default_sort_key,
             'Name': lambda x: x['name'],
             'Type': lambda x: (full_type(x), Cards.default_sort_key(x)),
-            'Color Identity': lambda x: ([] if x['color_identity'] is None else
-                                         sorted(x['color_identity'],
-                                                key=lambda x: ['W', 'U', 'B', 'R', 'G'].index(x)),
-                                         Cards.default_sort_key(x)),
+            'Color Identity': lambda x: (color_identity_key(x), Cards.default_sort_key(x)),
             'Rarity': lambda x: (x['rarity'], Cards.default_sort_key(x)),
             'Set Name': lambda x: (x['set_name'], Cards.default_sort_key(x))
         }
     screen = ObjectProperty(None, allownone=True)
+    prefix = 'Sort By: '
 
     def __init__(self, **kwargs):
         super(SortSelector, self).__init__(**kwargs)
-        self.text = 'CMC'
+        self.text = self.prefix + 'CMC'
 
         self.drop_list = DropDown()
-        for conn in self.sort_methods:
+        for conn in sorted(self.sort_methods):
             btn = Button(text=conn, size_hint_y=None, height=30)
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
             btn.font_size = 16
@@ -205,12 +211,12 @@ class SortSelector(Button):
         self.drop_list.bind(on_select=self.drop_select)
 
     def drop_select(self, instance, text):
-        setattr(self, 'text', text)
+        setattr(self, 'text', self.prefix + text)
         if self.screen is not None:
             self.screen.update_deck(self.screen.deck, save=False)
 
     def get_sort(self):
-        return self.sort_methods[self.text]
+        return self.sort_methods[self.text[len(self.prefix):]]
 
 
 class Board(BoxLayout):

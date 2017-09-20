@@ -128,7 +128,7 @@ class Deck:
         if fname is None:
             fname = self.file_location
 
-        boards = self.get_sorted(lambda x: x[0]['name'])
+        boards = self.get_sorted(lambda x: x['name'])
         res = []
         for board, cards in sorted(boards.items()):
             if decked_compatible:
@@ -234,6 +234,7 @@ class Board(BoxLayout):
     def update_cards(self, cards):
         for card, _ in cards[len(self.cache):]:
             card_widget = CardResult(board=self.board, size_hint=(1, None))
+            card_widget.screen = self.screen
             self.add_widget(card_widget)
             self.cache.append(card_widget)
 

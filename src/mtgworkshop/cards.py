@@ -19,6 +19,7 @@ class CardScreen(Screen):
     type_line = StringProperty()
     rarity = StringProperty()
     text = StringProperty(allownone=True)
+    flavor = StringProperty(allownone=True)
     rulings = ObjectProperty(allownone=True)
     main_count = StringProperty('-')
     side_count = StringProperty('-')

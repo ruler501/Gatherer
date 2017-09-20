@@ -17,8 +17,9 @@
                     height: '4in'
                     size_hint: 1, None
                 BoxLayout:
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
                     orientation: 'horizontal'
-                    size_hint: 1, None
                     height: 20
                     Label:
                         color: 0, 0, 0, 1
@@ -29,7 +30,8 @@
                         
                 BoxLayout:
                     orientation: 'horizontal'
-                    size_hint: 1, None
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
                     height: 20
                     Label:
                         color: 0, 0, 0, 1
@@ -41,7 +43,8 @@
                         text_size: self.size
                 BoxLayout:
                     orientation: 'horizontal'
-                    size_hint: 1, None
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
                     height: 20
                     Label:
                         color: 0, 0, 0, 1
@@ -52,12 +55,21 @@
                         text: screen.rarity
                         text_size: self.size
                 MultiLineLabel:
-                    size_hint: 1, None
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
                     color: 0, 0, 0, 1
-                    text: screen.text
+                    text: screen.text if screen.text is not None else ''
                     text_size: self.size
+                MultiLineLabel:
+                    size_hint: 0.8, None
+                    pos_hint: {'center_x': 0.5}
+                    color: 0, 0, 0, 1
+                    text: ('[i]' + screen.flavor + '[/i]') if screen.flavor is not None else ''
+                    text_size: self.size
+                    markup: True
                 BoxLayout:
-                    size_hint: 1, None
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
                     orientation: 'vertical'
                     spacing: 5
                     id: rulings_box

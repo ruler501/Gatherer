@@ -1,71 +1,71 @@
 CREATE TABLE cards (
-"name": NOT NULL TEXT PRIMARY KEY
-"mana_cost": TEXT
-"type_line" NOT NULL TEXT,
-"text" TEXT,
-"power" INTEGER,
-"toughness" INTEGER,
-"loyalty" INTEGER,
-"life" INTEGER,
-"hand" INTEGER,
-"layout" NOT NULL TEXT
-"alt_name" TEXT
-);
-
-CREATE TABLE supertypes (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"supertype": NOT NULL TEXT
-);
-
-CREATE TABLE types (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"type": NOT NULL TEXT
-);
-
-CREATE TABLE subtypes (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"subtype": NOT NULL TEXT
-);
-
-CREATE TABLE colors (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"color": NOT NULL TEXT
-);
-
-CREATE TABLE color_identity (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"color": NOT NULL TEXT
-);
-
-CREATE TABLE rulings (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"date": NOT NULL TEXT,
-"text": NOT NULL TEXT
-);
-
-CREATE TABLE rulings (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"legacy": NOT NULL BOOL,
-"modern": NOT NULL BOOL,
-"standard": NOT NULL BOOL,
-"commander": NOT NULL BOOL,
+    "name" TEXT NOT NULL PRIMARY KEY,
+    "mana_cost" TEXT,
+    "type_line" TEXT NOT NULL,
+    "text" TEXT,
+    "power" INTEGER,
+    "toughness" INTEGER,
+    "loyalty" INTEGER,
+    "life" INTEGER,
+    "hand" INTEGER,
+    "layout" TEXT NOT NULL,
+    "alt_name" TEXT
 );
 
 CREATE TABLE sets (
-"set_code" NOT NULL TEXT PRIMARY KEY,
-"set_name" NOT NULL TEXT
+    "set_code" TEXT NOT NULL PRIMARY KEY,
+    "set_name" TEXT NOT NULL
 );
 
+CREATE TABLE supertypes (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "supertype" TEXT NOT NULL
+);
+ 
+CREATE TABLE types (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "type" TEXT NOT NULL
+);
+
+CREATE TABLE subtypes (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "subtype" TEXT NOT NULL
+);
+
+CREATE TABLE colors (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "color" TEXT NOT NULL
+);
+
+CREATE TABLE color_identity (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "color" TEXT NOT NULL
+);
+
+CREATE TABLE rulings (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "date" TEXT NOT NULL,
+    "text" TEXT NOT NULL
+);
+ 
+-- CREATE TABLE bannings (
+--     "card_name" TEXT NOT NULL REFERENCES cards(name),
+--     "legacy" BOOL NOT NULL,
+--     "modern" BOOL NOT NULL,
+--     "standard" BOOL NOT NULL,
+--     "commander" BOOL NOT NULL,
+-- );
+
 CREATE TABLE printings (
-"multiverse_id" NOT NULL INTEGER PRIMARY KEY
-FOREIGN KEY(name) REFERENCES cards(name),
-"rarity" NOT NULL TEXT,
-"watermark" TEXT,
-FOREIGN KEY(set_code) REFERENCES sets(set_code),
-"flavor" TEXT,
-"artist" NOT NULL TEXT,
-"image_url" NOT NULL TEXT,
-"original_text" TEXT,
-"original_type" TEXT,
-"number" INTEGER,
+    "multiverse_id" INTEGER NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL REFERENCES cards(name),
+    "rarity" TEXT NOT NULL,
+    "watermark" TEXT,
+    "set" TEXT NOT NULL REFERENCES sets(set_code),
+    "flavor" TEXT,
+    "artist" TEXT NOT NULL,
+    "image_url" TEXT NOT NULL,
+    "original_text" TEXT,
+    "original_type" TEXT,
+    "number" INTEGER
 );

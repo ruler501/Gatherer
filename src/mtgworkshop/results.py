@@ -19,7 +19,6 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     mana_cost = StringProperty('', allownone=True)
     set_name = StringProperty('')
     type_line = StringProperty('')
-    full_type_line = StringProperty('')
     card = ObjectProperty()
     mana_render = ObjectProperty()
     back_texture = ObjectProperty(Gradient.horizontal([148, 162, 173, 255]))
@@ -30,6 +29,7 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     image = ObjectProperty()
     screen = ObjectProperty(None, allownone=True)
 
+    full_type_line = StringProperty('')
     count = StringProperty()
     board = StringProperty('Main')
 

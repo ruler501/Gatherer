@@ -269,3 +269,22 @@ def is_origin_legal(mvid):
                 print(printing, card['name'])
             return True
     return False
+
+cards_var = ("printings", "rarity", "watermark", "alt_name",
+             "loyalty", "set", "multiverse_id", "text", "type_line",
+             "life", "subtypes", "flavor", "rulings", "mana_cost",
+             "artist", "supertypes", "types", "colors",
+             "layout", "set_name", "power", "cmc", "name",
+             "legalities", "image_url", "color_identity",
+             "original_text", "number",
+             "original_type", "hand", "toughness")
+# Missing printings, subtypes, rulings, supertypes, types, colors, legalities, color_identity
+'''SELECT printings.rarity, printings.watermark, printings.alt_name, cards.loyalty,
+    printings.set, printings.multiverse_id, cards.text, cards.type_line, cards.life,
+    printings.flavor, cards.mana_cost, printings.artist, card.layout, sets.set_name,
+    cards.power, cards.cmc, cards.name, printings.image_url, printings.original_text,
+    printings.number, printings.original_type, cards.hand, cards.toughness
+    FROM cards
+    INNER JOIN printings on printings.name = cards.name
+    INNER JOIN sets on sets.name = printings.set
+    where'''

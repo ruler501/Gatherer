@@ -61,7 +61,7 @@ CREATE TABLE printings (
     "name" TEXT NOT NULL REFERENCES cards(name),
     "rarity" TEXT NOT NULL,
     "watermark" TEXT,
-    "set" TEXT NOT NULL REFERENCES sets(set_code),
+    "set_code" TEXT NOT NULL REFERENCES sets(set_code),
     "flavor" TEXT,
     "artist" TEXT NOT NULL,
     "image_url" TEXT NOT NULL,

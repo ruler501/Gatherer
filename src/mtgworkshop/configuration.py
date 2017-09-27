@@ -16,6 +16,8 @@ DEFAULT_CACHE_FILE = CACHE_DIR + '/worshop.config'
 class ConfigurationManager:
     default_values = \
         {
+            'window_width': 540,
+            'window_height': 960
         }
 
     def __init__(self, config_file):
@@ -40,6 +42,7 @@ class ConfigurationManager:
     def __getattr__(self, key):
         if key in self.default_values:
             val = self.default_values[key]
+            object.__setattr__(self, key, val)
             setattr(self, key, val)
             return val
         else:

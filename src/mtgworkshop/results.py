@@ -1,4 +1,4 @@
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.recycleview import RecycleView
@@ -12,19 +12,21 @@ from utils import Gradient
 
 
 class CardResult(BoxLayout, RecycleDataViewBehavior):
-    name = StringProperty('')
-    image_url = StringProperty('')
-    power = StringProperty('', allownone=True)
-    toughness = StringProperty('', allownone=True)
-    mana_cost = StringProperty('', allownone=True)
-    set_name = StringProperty('')
-    type_line = StringProperty('')
+    name = StringProperty()
+    image_url = StringProperty()
+    power = ObjectProperty(allownone=True)
+    toughness = ObjectProperty(allownone=True)
+    mana_cost = StringProperty(allownone=True)
+    set_name = StringProperty()
+    type_line = StringProperty()
+    rarity = StringProperty()
+    life = NumericProperty(None, allownone=True)
+    hand = NumericProperty(None, allownone=True)
+
     card = ObjectProperty()
     mana_render = ObjectProperty()
     back_texture = ObjectProperty(Gradient.horizontal([148, 162, 173, 255]))
     color_identity = ObjectProperty(allownone=True)
-    # life = NumericProperty('', allownone=True)
-    # hand = NumericProperty('', allownone=True)
 
     image = ObjectProperty()
     screen = ObjectProperty(None, allownone=True)
@@ -57,10 +59,10 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
     def create_type_line(self):
         res = self.type_line
-        if 'Creature' in res or 'Vehicle' in res:
+        if self.power is not None and self.toughness is not None:
             res += ' {}/{}'.format(self.power, self.toughness)
-        # elif self.life is not None and self.hand is not None:
-        #     res += ' {}/{}'.format(int(self.life), int(self.hand))
+        if self.life is not None and self.hand is not None:
+            res += ' {}/{}'.format(int(self.life), int(self.hand))
         self.full_type_line = res
 
     def on_type_line(self, instance, value):

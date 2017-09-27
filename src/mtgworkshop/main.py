@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 from kivy.app import App
+from kivy.config import Config
 from kivy.core.window import Window
 from kivy.garden.androidtabs import AndroidTabs
 from kivy.lang.builder import Builder
 from kivy.uix.screenmanager import ScreenManager
 
-from configuration import ConfigurationScreen
+from configuration import ConfigurationScreen, DefaultConfiguration
 from decks import DeckScreen
 from search import SearchScreen
 from utils import MyTab
@@ -51,5 +52,8 @@ class WorkshopApp(App):
 
 
 if __name__ == '__main__':
+    # Config.set('graphics', 'width', DefaultConfiguration.window_width)
+    # Config.set('graphics', 'height', DefaultConfiguration.window_height)
     Window.clearcolor = [0.6, 0.6, 0.6, 1]
+    Window.size = (DefaultConfiguration.window_width, DefaultConfiguration.window_height)
     WorkshopApp().run()

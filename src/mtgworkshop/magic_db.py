@@ -14,7 +14,7 @@ DB = "res/cards.sqlite3"
 origins = r'(ORI)|(BFZ)|(OGW)|(SOI)|(EMN)|(KLD)|(AER)|(AKH)|(HOU)|(DDP)|(DDQ)|(DDR)|(DDS)|(E01)|(C15)|(C16)|(C17)|(CN2)'
 origins_list = origins.replace('(', '').replace(')', '').split('|')
 DEBUG = True
-# DEBUG = False
+DEBUG = False
 
 
 def get_conn():
@@ -93,7 +93,9 @@ class Card:
         return getattr(self, index)
 
     def items(self):
-        return {(key, getattr(self, key)) for key in Cards.card_vars}
+        res = {(key, getattr(self, key)) for key in Cards.card_vars}
+        res |= {(key, getattr(self, key)) for key in ('image_url', 'rulings', 'alt_name')}
+        return res
 
     def get(self, key, default_val=None):
         return getattr(self, key, default_val)
@@ -101,22 +103,22 @@ class Card:
 
 class Cards:
     class CardsQuery:
-        self_var_ops = \
+        var_ops = \
             {
                 "equals": {},
                 "matches": {},
                 "contains": {},
                 "at_least": {},
                 "at_most": {},
-                "greater": {},
-                "lesser": {},
+                "greater_than": {},
+                "less_than": {},
             }
         var_tables = \
             {
                 # "printings": None,
                 "rarity": 'printings',
                 "watermark": 'printings',
-                "alt_name": 'cards',
+                # "alt_name": 'cards',
                 "loyalty": 'cards',
                 "set": 'printings',
                 "multiverse_id": 'printings',
@@ -124,7 +126,7 @@ class Cards:
                 "type_line": 'cards',
                 "life": 'cards',
                 "flavor": 'printings',
-                "rulings": None,
+                # "rulings": None,
                 "mana_cost": 'card',
                 "artist": 'printings',
                 "supertypes": None,
@@ -137,7 +139,7 @@ class Cards:
                 "cmc": 'cards',
                 "name": 'cards',
                 # "legalities": 'None',
-                "image_url": 'printings',
+                # "image_url": 'printings',
                 "color_identity": None,
                 "original_text": 'printings',
                 "number": 'printings',
@@ -158,18 +160,27 @@ class Cards:
         def __init__(self):
             self.query = self.basic_statement[:]
             self.params = []
-            self.connector = ' WHERE '
+            self.connector = '\nWHERE '
             self.use_not = False
 
         def _where(self, _lookup, **kwargs):
-            if len(kwargs) > 1:
+            if len(kwargs) != 1:
                 raise ValueError('Too many args at once, only accepts one per call')
 
             key, value = list(kwargs.items())[0]
-            if key not in self.self_var_ops[_lookup]:
+            if key not in self.var_ops[_lookup]:
                 raise ValueError('Cannot test key by value')
-            if _lookup == 'contains' and not Cards.card_vars[key].startswith('list'):
-                value = '%{}%'.format(value)
+            if _lookup == 'contains':
+                if not Cards.card_vars[key].startswith('list'):
+                    value = '%{}%'.format(value)
+            elif Cards.card_vars[key].startswith('list'):
+                value = int(value)
+            elif Cards.card_vars[key].startswith('int'):
+                old_value = value
+                try:
+                    value = int(value)
+                except ValueError:
+                    value = old_value
 
             table = self.var_tables[key]
             table_key = key
@@ -181,7 +192,7 @@ class Cards:
             if self.use_not:
                 self.query += ' NOT '
                 self.use_not = False
-            self.query += self.self_var_ops[_lookup][key].format(table_key)
+            self.query += self.var_ops[_lookup][key].format(table_key)
 
             if self.connector not in self.normal_connectors:
                 self.connector = ' AND '
@@ -208,11 +219,11 @@ class Cards:
         def where_at_most(self, **kwargs):
             return self._where("at_most", **kwargs)
 
-        def where_greater(self, **kwargs):
-            return self._where("greater", **kwargs)
+        def where_greater_than(self, **kwargs):
+            return self._where("greater_than", **kwargs)
 
-        def where_lesser(self, **kwargs):
-            return self._where("lesser", **kwargs)
+        def where_less_than(self, **kwargs):
+            return self._where("less_than", **kwargs)
 
         def negated(self):
             self.use_not = not self.use_not
@@ -237,7 +248,7 @@ class Cards:
                 return Card(row)
 
     @staticmethod
-    @disk_cache('res/cards.mvid.cache')
+    # @disk_cache('res/cards.mvid.cache')
     def find_by_mvid(mvid):
         return Cards.where(multiverse_id=mvid).find_one()
 
@@ -246,7 +257,7 @@ class Cards:
     def find_all_printings(mvid):
         card_name = Cards.find_by_mvid(mvid)['name']
         cards = Cards.where(name=card_name).find_all()
-        return (x['multiverse_id'] for x in cards)
+        return cards
 
     @staticmethod
     def default_sort_key(card):
@@ -257,7 +268,7 @@ class Cards:
             # "printings": 'list<string>',
             "rarity": 'string',
             "watermark": 'string',
-            "alt_name": 'string',
+            # "alt_name": 'string',
             "loyalty": 'int',
             "set_code": 'string',
             "multiverse_id": 'int',
@@ -265,7 +276,7 @@ class Cards:
             "type_line": 'string',
             "life": 'int',
             "flavor": 'string',
-            "rulings": 'list<Ruling>',
+            # "rulings": 'list<Ruling>',
             "mana_cost": 'string',
             "artist": 'string',
             "supertypes": 'list<string>',
@@ -278,7 +289,7 @@ class Cards:
             "cmc": 'int',
             "name": 'string',
             # "legalities": 'list<Legality>',
-            "image_url": 'string',
+            # "image_url": 'string',
             "color_identity": 'list<string>',
             "original_text": 'string',
             "number": 'string',
@@ -302,15 +313,15 @@ for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction)
 
 for var, var_type in Cards.card_vars.items():
     if var_type.startswith('string'):
-        Cards.CardsQuery.self_var_ops['equals'][var] = '{} = ?'
-        Cards.CardsQuery.self_var_ops['matches'][var] = 'REGEXP({}, ?)'
-        Cards.CardsQuery.self_var_ops['contains'][var] = '{} LIKE ?'
+        Cards.CardsQuery.var_ops['equals'][var] = '{} = ?'
+        Cards.CardsQuery.var_ops['matches'][var] = 'REGEXP({}, ?)'
+        Cards.CardsQuery.var_ops['contains'][var] = '{} LIKE ?'
     if var_type.startswith('int'):
-        Cards.CardsQuery.self_var_ops['equals'][var] = '{} = ?'
-        Cards.CardsQuery.self_var_ops['at_least'][var] = '{} >= ?'
-        Cards.CardsQuery.self_var_ops['at_most'][var] = '{} <= ?'
-        Cards.CardsQuery.self_var_ops['greater'][var] = '{} > ?'
-        Cards.CardsQuery.self_var_ops['lesser'][var] = '{} < ?'
+        Cards.CardsQuery.var_ops['equals'][var] = '{} = ?'
+        Cards.CardsQuery.var_ops['at_least'][var] = '{} >= ?'
+        Cards.CardsQuery.var_ops['at_most'][var] = '{} <= ?'
+        Cards.CardsQuery.var_ops['greater_than'][var] = '{} > ?'
+        Cards.CardsQuery.var_ops['less_than'][var] = '{} < ?'
     if var_type.startswith('list') and \
        split_and_cut(var_type, '<', 1, '>', 0).startswith('string'):
         inner_var = \
@@ -323,12 +334,11 @@ for var, var_type in Cards.card_vars.items():
             }
         subquery = 'select * from {} where card_name = cards.name'
         grouping = 'group by card_name having count(*)'
-        Cards.CardsQuery.self_var_ops['contains'][var] = 'exists({} and {} = ?)'.format(subquery,
-                                                                                        inner_var[var])
-        Cards.CardsQuery.self_var_ops['at_least'][var] = 'exists({} {} >= ?)'.format(subquery, grouping)
-        Cards.CardsQuery.self_var_ops['at_most'][var] = 'exists({} {} <= ?)'.format(subquery, grouping)
-        Cards.CardsQuery.self_var_ops['greater'][var] = 'exists({} {} > ?)'.format(subquery, grouping)
-        Cards.CardsQuery.self_var_ops['lesser'][var] = 'exists({} {} < ?)'.format(subquery, grouping)
+        Cards.CardsQuery.var_ops['contains'][var] = 'exists({} and {} = ?)'.format(subquery, inner_var[var])
+        Cards.CardsQuery.var_ops['at_least'][var] = 'exists({} {} >= ?)'.format(subquery, grouping)
+        Cards.CardsQuery.var_ops['at_most'][var] = 'exists({} {} <= ?)'.format(subquery, grouping)
+        Cards.CardsQuery.var_ops['greater_than'][var] = 'exists({} {} > ?)'.format(subquery, grouping)
+        Cards.CardsQuery.var_ops['less_than'][var] = 'exists({} {} < ?)'.format(subquery, grouping)
 
 
 def is_origin_legal(mvid):

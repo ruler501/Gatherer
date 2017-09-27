@@ -1,3 +1,3 @@
 #!/usr/bin/env sh
 
-python3 src/mtgworkshop/workshop.py
+python3 src/mtgworkshop/main.py

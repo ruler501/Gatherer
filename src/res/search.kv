@@ -32,15 +32,15 @@
 <FieldInput>:
     size_hint: 1, None
     height: 40
-    conn_sel: conn_sel
+#    conn_sel: conn_sel
     field_sel: field_sel
     op_sel: op_sel
     neg_sel: neg_sel
     text_sel: text_sel
     orientation: 'horizontal'
-    ConnectorSelector:
-        id: conn_sel
-        size_hint: 0.075, 1
+#    ConnectorSelector:
+#        id: conn_sel
+#        size_hint: 0.075, 1
     FieldSelector:
         id: field_sel
         size_hint: 0.125, 1
@@ -49,6 +49,7 @@
         size_hint: 0.05, 1
     OperationSelector:
         id: op_sel
+        field: field_sel.text
         size_hint: 0.125, 1
     TextInput:
         id: text_sel

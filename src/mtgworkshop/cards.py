@@ -1,4 +1,4 @@
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import ObjectProperty, NumericProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
 
@@ -12,8 +12,8 @@ class CardScreen(Screen):
 
     name = StringProperty()
     image_url = StringProperty()
-    power = StringProperty(allownone=True)
-    toughness = StringProperty(allownone=True)
+    power = ObjectProperty(allownone=True)
+    toughness = ObjectProperty(allownone=True)
     mana_cost = StringProperty(allownone=True)
     set_name = StringProperty()
     type_line = StringProperty()
@@ -21,6 +21,9 @@ class CardScreen(Screen):
     text = StringProperty(allownone=True)
     flavor = StringProperty(allownone=True)
     rulings = ObjectProperty(allownone=True)
+    life = NumericProperty(None, allownone=True)
+    hand = NumericProperty(None, allownone=True)
+
     main_count = StringProperty('-')
     side_count = StringProperty('-')
 
@@ -56,8 +59,11 @@ class CardScreen(Screen):
         self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
 
     def create_power_tough(self):
-        if 'Creature' in self.type_line or 'Vehicle' in self.type_line:
-            self.power_tough = '{}/{}'.format(self.power, self.toughness)
+        self.power_tough = ''
+        if self.power is not None and self.toughness is not None:
+            self.power_tough += ' {}/{}'.format(self.power, self.toughness)
+        if self.life is not None and self.hand is not None:
+            self.power_tough += ' {}/{}'.format(int(self.life), int(self.hand))
 
     def on_power(self, instance, value):
         self.create_power_tough()
@@ -71,7 +77,7 @@ class CardScreen(Screen):
 
         self.rulings_box.clear_widgets()
         for rule in value:
-            t_label = RulingsBox(rule['date'], rule['text'])
+            t_label = RulingsBox(rule.date, rule.text)
             self.rulings_box.add_widget(t_label)
         self.rulings_box.height = 60 * len(value)
 

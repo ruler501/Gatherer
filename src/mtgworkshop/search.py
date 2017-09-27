@@ -1,4 +1,4 @@
-from kivy.properties import BooleanProperty, ObjectProperty
+from kivy.properties import BooleanProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
@@ -20,31 +20,45 @@ class NegateSelector(BoxLayout):
 
 
 class OperationSelector(Button):
-    operations = \
-        {
-            'Equals': 'where',
-            'Contains': 'where_contains',
-            'Regex Match': 'where_matches'
-        }
+    field = StringProperty('Text')
 
     def __init__(self, **kwargs):
         super(OperationSelector, self).__init__(**kwargs)
-        self.text = 'Contains'
+        self.text = 'Equals'
         self.font_size = 16
 
         self.drop_list = DropDown()
+        self.bind(on_release=self.drop_list.open)
+        self.drop_list.bind(on_select=lambda instance, x: setattr(self, 'text', x))
+
+        self.on_field(None, self.field)
+
+    def create_dropdown(self):
+        self.drop_list.clear_widgets()
+        if self.text not in self.operations:
+            if 'Equals' in self.operations:
+                self.text = 'Equals'
+            elif 'Contains' in self.operations:
+                self.text = 'Contains'
+            else:
+                self.text = self.operations[0]
         for op in self.operations:
             btn = Button(text=op, size_hint_y=None, height=32)
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
             btn.font_size = 16
             self.drop_list.add_widget(btn)
 
-        self.bind(on_release=self.drop_list.open)
-
-        self.drop_list.bind(on_select=lambda instance, x: setattr(self, 'text', x))
+    def on_field(self, instance, value):
+        field = self.field.lower().replace(' ', '_')
+        self.operations = []
+        for op, values in Cards.CardsQuery.var_ops.items():
+            if field in values:
+                self.operations.append(op.replace('_', ' ').title())
+        self.operations = sorted(self.operations)
+        self.create_dropdown()
 
     def get_operation(self):
-        return self.operations[self.text]
+        return self.text.replace(' ', '_').lower()
 
 
 class ConnectorSelector(Button):
@@ -74,8 +88,7 @@ class ConnectorSelector(Button):
 
 
 class FieldSelector(Button):
-    fields = ['Text', 'Type Line', 'Name', 'Toughness', 'Flavor', 'Loyalty', 'Artist', 'Rarity',
-              'Set Name', 'CMC', 'Color Identity', 'Original Text', 'Original Type']
+    fields = sorted(x.replace('_', ' ').title() for x in Cards.card_vars.keys())
 
     def __init__(self, **kwargs):
         super(FieldSelector, self).__init__(**kwargs)
@@ -91,7 +104,6 @@ class FieldSelector(Button):
         self.bind(on_release=self.drop_list.open)
 
         self.drop_list.bind(on_select=lambda instance, x: setattr(self, 'text', x))
-        # setattr(getattr(self, 'parent'), 'field', self.get_field())
 
     def get_field(self):
         return self.text.lower().replace(' ', '_')
@@ -99,7 +111,7 @@ class FieldSelector(Button):
 
 class FieldInput(BoxLayout):
     op_sel = ObjectProperty()
-    conn_sel = ObjectProperty()
+    # conn_sel = ObjectProperty()
     field_sel = ObjectProperty()
     text_sel = ObjectProperty()
     neg_sel = ObjectProperty()
@@ -110,12 +122,12 @@ class FieldInput(BoxLayout):
     def update_query(self, i, query):
         if len(self.text_sel.text) == 0:
             return query
-        if i > 0:
-            query = getattr(query, self.conn_sel.get_connector())()
+        # if i > 0:
+        #     query = getattr(query, self.conn_sel.get_connector())()
         if self.neg_sel.use_not:
             query = query.negated()
         kwargs = {self.field_sel.get_field(): self.text_sel.text}
-        query = getattr(query, self.op_sel.get_operation())(**kwargs)
+        query = query._where(self.op_sel.get_operation(), **kwargs)
         return query
 
 

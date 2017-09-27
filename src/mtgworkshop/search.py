@@ -5,7 +5,7 @@ from kivy.uix.dropdown import DropDown
 from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 
-from magic_db import Cards
+from mtgworkshop.magic_db import Cards
 
 
 class SearchScreen(Screen):

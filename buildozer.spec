@@ -10,13 +10,13 @@ package.name = mtgworkshop
 package.domain = com.mtgworkshop
 
 # (str) Source code where the main.py live
-source.dir = src/mtgworkshop
+source.dir = .
 
 # (list) Source files to include (let empty to include all the files)
-source.include_exts = py,png,jpg,kv,atlas
+#source.include_exts = 
 
 # (list) List of inclusions using pattern matching
-#source.include_patterns = assets/*,images/*.png
+source.include_patters = res/*,cache/*,src/*
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec
@@ -25,7 +25,7 @@ source.include_exts = py,png,jpg,kv,atlas
 #source.exclude_dirs = tests, bin
 
 # (list) List of exclusions using pattern matching
-#source.exclude_patterns = license,images/*/*.jpg
+source.exclude_patterns = create_db.py
 
 # (str) Application versioning (method 1)
 version = 0.0.1
@@ -36,7 +36,7 @@ version = 0.0.1
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
-requirements = python3,kivy,sqlite3
+requirements = python3crystax,kivy,sqlite3
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -94,19 +94,19 @@ fullscreen = 0
 #android.minapi = 9
 
 # (int) Android SDK version to use
-#android.sdk = 20
+android.sdk = 19
 
 # (str) Android NDK version to use
-#android.ndk = 9c
+# android.ndk = 10.3.2
 
 # (bool) Use --private data storage (True) or --dir public storage (False)
 #android.private_storage = True
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
-#android.ndk_path =
+android.ndk_path = ~/tmp/crystaxndk
 
 # (str) Android SDK directory (if empty, it will be automatically downloaded.)
-#android.sdk_path =
+android.sdk_path = ~/Library/Android/sdk
 
 # (str) ANT directory (if empty, it will be automatically downloaded.)
 #android.ant_path =
@@ -183,7 +183,9 @@ fullscreen = 0
 #android.copy_libs = 1
 
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86
-android.arch = armeabi-v7a
+# android.arch = armeabi-v7a
+# android.arch = arm64-v8a
+android.arch = x86
 
 #
 # Python for android (p4a) specific

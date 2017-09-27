@@ -5,10 +5,10 @@ from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 
-from cards import CardScreen
-from configuration import DefaultConfiguration
-from search import SearchScreen
-from utils import Gradient
+from mtgworkshop.cards import CardScreen
+from mtgworkshop.configuration import DefaultConfiguration
+from mtgworkshop.search import SearchScreen
+from mtgworkshop.utils import Gradient
 
 
 class CardResult(BoxLayout, RecycleDataViewBehavior):

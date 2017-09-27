@@ -10,8 +10,9 @@ import mtgsdk
 
 from collections import Counter
 
-from magic_db import DB, Cards, Ruling
-from utils import make_unique
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/src')
+from mtgworkshop.magic_db import DB, Cards, Ruling
+from mtgworkshop.utils import make_unique
 
 
 DEBUG = False

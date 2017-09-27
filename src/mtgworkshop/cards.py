@@ -2,7 +2,7 @@ from kivy.properties import ObjectProperty, NumericProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
 
-from configuration import DefaultConfiguration
+from mtgworkshop.configuration import DefaultConfiguration
 
 
 class CardScreen(Screen):

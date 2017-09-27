@@ -3,7 +3,7 @@ import inspect
 import re
 import sqlite3
 
-from utils import disk_cache, split_and_cut
+from mtgworkshop.utils import disk_cache, split_and_cut
 
 
 def regexp(expr, item):

@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
+import os
+import sys
+
 from kivy.app import App
-from kivy.config import Config
 from kivy.core.window import Window
 from kivy.garden.androidtabs import AndroidTabs
 from kivy.lang.builder import Builder
 from kivy.uix.screenmanager import ScreenManager
 
-from configuration import ConfigurationScreen, DefaultConfiguration
-from decks import DeckScreen
-from search import SearchScreen
-from utils import MyTab
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/src')
+from mtgworkshop.configuration import ConfigurationScreen, DefaultConfiguration
+from mtgworkshop.decks import DeckScreen
+from mtgworkshop.search import SearchScreen
+from mtgworkshop.utils import MyTab
 
 
 class WorkshopApp(App):
@@ -50,10 +53,14 @@ class WorkshopApp(App):
         if prof is not None:
             prof.disable()
 
+    def on_pause(self):
+        return True
+
 
 if __name__ == '__main__':
     # Config.set('graphics', 'width', DefaultConfiguration.window_width)
     # Config.set('graphics', 'height', DefaultConfiguration.window_height)
+    if not os.path.dirname(os.path.realpath(__file__)).startswith('/data/data/com.mtgworkshop.mtgworkshop'):
+        Window.size = (DefaultConfiguration.window_width, DefaultConfiguration.window_height)
     Window.clearcolor = [0.6, 0.6, 0.6, 1]
-    Window.size = (DefaultConfiguration.window_width, DefaultConfiguration.window_height)
     WorkshopApp().run()

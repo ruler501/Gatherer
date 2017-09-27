@@ -89,7 +89,8 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         if colors is None or len(colors) == 0:
             color_vals = [colorlookup['Colorless']]
         elif len(colors) == 1:
-            color_vals = [colorlookup[colors[0]]]
+            color, *_ = colors
+            color_vals = [colorlookup[color]]
         elif len(colors) > 1:
             color_vals = [colorlookup[x] for x in sorted(colors, key=color_order.index)]
 

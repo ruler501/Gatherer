@@ -10,7 +10,7 @@ import mtgsdk
 
 from collections import Counter
 
-from magic_db import DB, Cards
+from magic_db import DB, Cards, Ruling
 from utils import make_unique
 
 
@@ -28,6 +28,17 @@ def create_db(dest=DB):
         cards = set(mtgsdk.Card.where(language="English").all())
         with open(LOCAL_CACHE, 'wb') as inp:
             pickle.dump(cards, inp)
+
+    to_remove = set()
+    for card in cards:
+        if card.multiverse_id is None or card.image_url is None:
+            to_remove.add(card)
+    cards -= to_remove
+
+    bfms = [card for card in cards if 'B.F.M.' in card.name]
+    for card in bfms:
+        card.multiverse_id = 9844
+
     mvid_count = Counter()
     for card in cards:
         mvid_count[card.multiverse_id] += 1
@@ -39,7 +50,7 @@ def create_db(dest=DB):
             names = set()
             to_remove = []
             for d in dup:
-                if d.name in names:
+                if d.name in names and 'B.F.M.' not in d.name:
                     to_remove.append(d)
                 else:
                     names.add(d.name)
@@ -88,6 +99,7 @@ def create_db(dest=DB):
          [
              lambda x: getattr(x, 'name'),
              lambda x: getattr(x, 'mana_cost'),
+             lambda x: getattr(x, 'cmc') or 0,
              lambda x: getattr(x, 'type'),
              lambda x: getattr(x, 'text'),
              lambda x: getattr(x, 'power'),
@@ -140,16 +152,17 @@ def create_db(dest=DB):
             [
                 lambda x: x
         ]),
-        ('rulings', lambda x: getattr(x, 'rulings'),
+        ('rulings', lambda x: [Ruling.from_dict(y) for y in (getattr(x, 'rulings') or [])],
             [
-                lambda x: x['date'],
-                lambda x: x['text']
+                lambda x: x.date,
+                lambda x: x.text,
         ])
     ]
 
     with contextlib.suppress(FileNotFoundError):
         os.remove(dest)
     conn = sqlite3.connect(dest)
+    conn.row_factory = sqlite3.Row
 
     with conn:
         cur = conn.cursor()
@@ -163,34 +176,50 @@ def create_db(dest=DB):
     for database, list_field, fields in m2m_databases:
         populate_m2m_database(conn, database, list_field, fields, cards)
 
+    with conn:
+        cur = conn.cursor()
+        cur.execute('VACUUM;')
+        cur.execute('ANALYZE;')
+
     conn.close()
 
 
 def populate_database(conn, database, fields, cards):
+    query = 'INSERT INTO {} VALUES ({})'.format(database, ','.join(['?' for f in fields]))
     for card in cards:
         try:
             with conn:
                 cur = conn.cursor()
-                cur.execute('INSERT INTO {} VALUES ({})'.format(database, ','.join(['?' for f in fields])),
-                            [field(card) for field in fields])
+                cur.execute(query, [field(card) for field in fields])
         except sqlite3.IntegrityError as e:
-            pass
+            e_desc = str(e)
+            if e_desc == 'UNIQUE constraint failed: cards.name' or \
+               e_desc == 'UNIQUE constraint failed: sets.set_name':
+                continue
+            else:
+                print(e)
+                print(card.name, card.names, card.set, card.number, card.multiverse_id)
+    print('populated', database)
 
 
 def populate_m2m_database(conn, database, list_field, fields, cards):
+    query = 'INSERT INTO {} VALUES ({})'.format(database,
+                                                ','.join(['?' for f in range(len(fields) + 1)]))
     for card in cards:
         vals = list_field(card)
+        name = getattr(card, 'name')
         if vals is None:
             continue
+        vals = set(vals)
         for val in vals:
             try:
                 with conn:
                     cur = conn.cursor()
-                    cur.execute('INSERT INTO {} VALUES ({})'.format(database,
-                                                                    ','.join(['?' for f in range(len(fields) + 1)])),
-                                [getattr(card, 'name')] + [field(val) for field in fields])
+                    cur.execute(query, [name] + [field(val) for field in fields])
             except sqlite3.IntegrityError as e:
-                pass
+                print(e)
+                print(card.name, card.types, card.supertypes)
+    print('populated', database)
 
 
 def populate_cache():

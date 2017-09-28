@@ -4,6 +4,7 @@ from collections import Counter, defaultdict
 from weakref import WeakMethod
 
 from kivy.clock import mainthread
+from kivy.metrics import dp, sp
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -201,9 +202,9 @@ class SortSelector(Button):
 
         self.drop_list = DropDown()
         for conn in sorted(self.sort_methods):
-            btn = Button(text=conn, size_hint_y=None, height=30)
+            btn = Button(text=conn, size_hint_y=None, height=dp(30))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = 16
+            btn.font_size = sp(16)
             self.drop_list.add_widget(btn)
 
         self.bind(on_release=self.drop_list.open)

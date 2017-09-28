@@ -1,8 +1,10 @@
 <SearchScreen>:
+    id: screen
     BoxLayout:
         orientation: 'vertical'
         SearchPage:
             id: rv
+            screen: screen
             size_hint: 1, 9.0 / 12
         Button:
             text: '+'
@@ -25,13 +27,13 @@
         SortSelector:
             pos_hint: {'right': 1}
             size_hint: 0.25, None
-            height: 30
+            height: dp(30)
             id: sort_sel
 
 
 <FieldInput>:
     size_hint: 1, None
-    height: 40
+    height: dp(40)
 #    conn_sel: conn_sel
     field_sel: field_sel
     op_sel: op_sel
@@ -72,5 +74,5 @@
         color: 0, 0, 0, 1
         text: "Not"
         size_hint: 0.1, 0.5
-        font_size: 14
+        font_size: sp(14)
         pos_hint: {'center_x': 0.5}

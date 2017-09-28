@@ -11,6 +11,7 @@ from threading import Thread
 from kivy.clock import mainthread
 from kivy.garden.androidtabs import AndroidTabsBase
 from kivy.graphics.texture import Texture
+from kivy.metrics import sp
 from kivy.properties import BooleanProperty, ListProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
@@ -41,7 +42,7 @@ class MultiLineLabel(Label):
 class ManaCost(RelativeLayout):
     symbols = ['W', 'U', 'B', 'R', 'G', 'C', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'X']
     mana_cost = StringProperty('', allownone=True)
-    MANA_SIZE = 18
+    MANA_SIZE = sp(18)
 
     def __init__(self, **kwargs):
         self.cache_images = defaultdict(list)
@@ -60,17 +61,17 @@ class ManaCost(RelativeLayout):
                 continue
             if len(self.cache_images[m]) > 0:
                 mana_image = self.cache_images[m].pop()
-                mana_image.pos = (self.MANA_SIZE * 1.1 * count, -self.MANA_SIZE * 2)
             elif m in self.symbols:
                 mana_image = Image(source='res/{}.png'.format(m),
                                    width=self.MANA_SIZE,
                                    allow_stretch=True,
                                    keep_ratio=True,
                                    mipmap=True,
-                                   size_hint=(None, None),
-                                   pos=(self.MANA_SIZE * 1.1 * count, -self.MANA_SIZE * 2))
+                                   size_hint=(None, None))
             else:
-                mana_image = Label(text=m, color=[0, 0, 0, 1], size=(32, 32), pos=(36 * count, 0))
+                mana_image = Label(text=m, color=[0, 0, 0, 1])
+            mana_image.size = (self.MANA_SIZE, self.MANA_SIZE)
+            mana_image.pos = (self.MANA_SIZE * 1.1 * count, -self.MANA_SIZE * 2)
             self.add_widget(mana_image)
             pre_cache_images[m].append(mana_image)
             count += 1
@@ -165,6 +166,7 @@ class CroppedImage(Image):
     skip = BooleanProperty(False)
     crop_to = ListProperty(None, allownone=True)
     original_size = ListProperty(None, allownone=True)
+    scale_to = ListProperty(None, allownone=True)
 
     def __init__(self, **kwargs):
         self.old_texture_update = self.texture_update
@@ -194,6 +196,9 @@ class CroppedImage(Image):
         self._coreimage.bind(on_texture=self.on_image_loaded)
         self.skip = True
         self.on_image_loaded()
+        if self.scale_to is not None and len(self.scale_to) == 2:
+            self.width = self.scale_to[0]
+            self.height = self.scale_to[1]
 
     def on_source(self, instance, value):
         self.skip = False
@@ -245,7 +250,7 @@ class CachedImage(BoxLayout):
 
     def download_image(self, value):
         cache_path = self.get_cached_path(value)
-        urllib.request.urlretrieve(value, cache_path)
+        print(urllib.request.urlretrieve(value, cache_path))
         self.set_image_location(cache_path)
 
 

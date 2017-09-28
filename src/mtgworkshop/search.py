@@ -1,3 +1,4 @@
+from kivy.metrics import dp, sp
 from kivy.properties import BooleanProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
@@ -24,8 +25,8 @@ class OperationSelector(Button):
 
     def __init__(self, **kwargs):
         super(OperationSelector, self).__init__(**kwargs)
-        self.text = 'Equals'
-        self.font_size = 16
+        self.text = 'Contains'
+        self.font_size = sp(16)
 
         self.drop_list = DropDown()
         self.bind(on_release=self.drop_list.open)
@@ -36,16 +37,16 @@ class OperationSelector(Button):
     def create_dropdown(self):
         self.drop_list.clear_widgets()
         if self.text not in self.operations:
-            if 'Equals' in self.operations:
-                self.text = 'Equals'
-            elif 'Contains' in self.operations:
+            if 'Contains' in self.operations:
                 self.text = 'Contains'
+            elif 'Equals' in self.operations:
+                self.text = 'Equals'
             else:
                 self.text = self.operations[0]
         for op in self.operations:
-            btn = Button(text=op, size_hint_y=None, height=32)
+            btn = Button(text=op, size_hint_y=None, height=dp(32))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = 16
+            btn.font_size = sp(16)
             self.drop_list.add_widget(btn)
 
     def on_field(self, instance, value):
@@ -74,9 +75,9 @@ class ConnectorSelector(Button):
 
         self.drop_list = DropDown()
         for conn in self.connectors:
-            btn = Button(text=conn, size_hint_y=None, height=30)
+            btn = Button(text=conn, size_hint_y=None, height=dp(30))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = 16
+            btn.font_size = sp(16)
             self.drop_list.add_widget(btn)
 
         self.bind(on_release=self.drop_list.open)
@@ -96,9 +97,9 @@ class FieldSelector(Button):
 
         self.drop_list = DropDown()
         for field in self.fields:
-            btn = Button(text=field, size_hint_y=None, height=30)
+            btn = Button(text=field, size_hint_y=None, height=dp(30))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = 16
+            btn.font_size = sp(16)
             self.drop_list.add_widget(btn)
 
         self.bind(on_release=self.drop_list.open)
@@ -134,10 +135,14 @@ class FieldInput(BoxLayout):
 class SearchPage(ScrollView):
     inner_layout = ObjectProperty()
     sort_sel = ObjectProperty()
+    screen = ObjectProperty()
 
     def on_inner_layout(self, instance, value):
         self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
         self.add_row()
+
+    def on_screen(self, instance, value):
+        print(self.screen, 'screen value set')
 
     def add_row(self):
         row = FieldInput()
@@ -147,7 +152,7 @@ class SearchPage(ScrollView):
         self.inner_layout.remove_widget(view)
 
     def perform_search(self):
-        from results import ResultsScreen
+        from mtgworkshop.results import ResultsScreen
         query = Cards.CardsQuery()
         for i, child in enumerate(child
                                   for child
@@ -157,6 +162,7 @@ class SearchPage(ScrollView):
 
         cards = sorted(query.find_all(), key=self.sort_sel.get_sort())
         next_page = ResultsScreen(cards, name="Results")
-        self.parent.parent.manager.add_widget(next_page)
-        self.parent.parent.manager.current = 'Results'
-        self.parent.parent.manager.remove_widget(self.parent.parent)
+        manager = self.screen.parent
+        manager.add_widget(next_page)
+        manager.current = 'Results'
+        manager.remove_widget(self.screen)

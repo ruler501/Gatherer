@@ -77,7 +77,6 @@ CREATE TABLE printings (
     "set_code" TEXT NOT NULL REFERENCES sets(set_code),
     "flavor" TEXT,
     "artist" TEXT NOT NULL,
-    "image_url" TEXT NOT NULL UNIQUE,
     "original_text" TEXT,
     "original_type" TEXT,
     "number" UNSIGNED INTEGER

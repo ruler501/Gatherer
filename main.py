@@ -60,7 +60,11 @@ class WorkshopApp(App):
 if __name__ == '__main__':
     # Config.set('graphics', 'width', DefaultConfiguration.window_width)
     # Config.set('graphics', 'height', DefaultConfiguration.window_height)
+    print(os.listdir('cache/images'))
+    open('cache/images/' + os.listdir('cache/images')[0])
+    # sys.exit()
+    # sys[test]
     if not os.path.dirname(os.path.realpath(__file__)).startswith('/data/data/com.mtgworkshop.mtgworkshop'):
-        Window.size = (DefaultConfiguration.window_width, DefaultConfiguration.window_height)
+        Window.size = (int(DefaultConfiguration.window_width), int(DefaultConfiguration.window_height))
     Window.clearcolor = [0.6, 0.6, 0.6, 1]
     WorkshopApp().run()

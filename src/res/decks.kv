@@ -10,7 +10,7 @@
             id: sort_sel
             screen: screen
         ScrollView:
-            scroll_wheel_distance: 40
+            scroll_wheel_distance: dp(40)
             size_hint: 1, 1
             BoxLayout:
                 id: inner_layout
@@ -27,8 +27,8 @@
                     text_size: self.size
                     halign: 'center'
                     size_hint: 1, None
-                    height: 40
-                    font_size: 32
+                    height: dp(40)
+                    font_size: sp(32)
                 Label:
                     canvas.before:
                         Color:
@@ -40,8 +40,8 @@
                     text_size: self.size
                     halign: 'center'
                     size_hint: 1, None
-                    height: 40
-                    font_size: 32
+                    height: dp(40)
+                    font_size: sp(32)
 
 <Board>:
     orientation: 'vertical'
@@ -54,7 +54,7 @@
             Rectangle:
                 pos: self.pos
                 size: self.size
-        height: 60
-        font_size: 40
+        height: dp(60)
+        font_size: sp(40)
         size_hint: 1, None
         text: board.title

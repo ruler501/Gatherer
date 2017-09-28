@@ -1,6 +1,6 @@
 <ResultPage>:
     viewclass: 'CardResult'
-    scroll_wheel_distance: 40
+    scroll_wheel_distance: dp(40)
     RecycleBoxLayout:
         spacing: dp(10)
         default_size: None, dp(100)
@@ -10,6 +10,7 @@
         orientation: 'vertical'
 
 <CardResult>:
+    height: self.minimum_height
     id: result
     canvas.before:
         Rectangle:
@@ -21,18 +22,19 @@
     CachedImage:
         id: image
         size_hint: None, None
-        height: 100
+        size: dp(135), dp(100)
         allow_stretch: True
         keep_ratio: True
         source: result.image_url
+        scale_to: dp(135), dp(100)
         original_size: 233, 311
         crop_to: 15, 35, 190, 140
     Label:
         text: result.count
         color: 0, 0, 0, 1
-        font_size: 64
+        font_size: sp(64)
         size_hint: 0.035, None
-        height: 100
+        height: dp(100)
     BoxLayout:
         orientation: 'vertical'
         size_hint: 0.25, None
@@ -40,25 +42,28 @@
             text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, None
-            height: 50
+            height: dp(50)
+            font_size: sp(16)
             text: result.name
         Label:
             text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, None
-            height: 50
+            height: dp(50)
+            font_size: sp(16)
             text: result.full_type_line
     BoxLayout:
         orientation: 'vertical'
         size_hint: 0.25, 1
         ManaCost:
             size_hint: 1, None
-            height: 50
+            height: dp(50)
             mana_cost: result.mana_cost
         Label:
             color: 0, 0, 0, 1
             size_hint: 1, None
-            height: 50
+            height: dp(50)
+            font_size: sp(16)
             text: result.set_name
             text_size: self.size
 

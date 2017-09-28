@@ -58,6 +58,7 @@ class Card:
         name = getattr(self, 'name')
         if mvid is None or name is None:
             raise ValueError('Did not set multiverse_id or name in row')
+        self.image_url = "http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid={}&type=card".format(mvid)
 
         set_types = [
             ('supertypes', lambda x: x['supertype']),
@@ -150,7 +151,7 @@ class Cards:
         basic_statement = '''SELECT printings.rarity, printings.watermark, cards.alt_name, cards.loyalty,
             printings.set_code, printings.multiverse_id, cards.text, cards.type_line, cards.life,
             printings.flavor, cards.mana_cost, printings.artist, cards.layout, sets.set_name,
-            cards.power, cards.cmc, cards.name, printings.image_url, printings.original_text,
+            cards.power, cards.cmc, cards.name, printings.original_text,
             printings.number, printings.original_type, cards.hand, cards.toughness
             FROM cards
             INNER JOIN printings on printings.name = cards.name

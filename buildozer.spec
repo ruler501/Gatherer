@@ -16,7 +16,7 @@ source.dir = .
 #source.include_exts = 
 
 # (list) List of inclusions using pattern matching
-source.include_patters = res/*,cache/*,src/*
+source.include_patters = res/*,cache/*,src/*,cache/images/.gitignore
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec
@@ -43,7 +43,7 @@ requirements = python3crystax,kivy,sqlite3
 # requirements.source.kivy = ../../kivy
 
 # (list) Garden requirements
-garden_requirements = androidtabs
+garden_requirements = androidtabs, filebrowser
 
 # (str) Presplash of the application
 #presplash.filename = %(source.dir)s/data/presplash.png
@@ -85,7 +85,7 @@ fullscreen = 0
 #android.presplash_color = #FFFFFF
 
 # (list) Permissions
-#android.permissions = INTERNET
+android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
 
 # (int) Android API to use
 #android.api = 19
@@ -183,9 +183,9 @@ android.sdk_path = ~/Library/Android/sdk
 #android.copy_libs = 1
 
 # (str) The Android arch to build for, choices: armeabi-v7a, arm64-v8a, x86
-# android.arch = armeabi-v7a
+android.arch = armeabi-v7a
 # android.arch = arm64-v8a
-android.arch = x86
+# android.arch = x86
 
 #
 # Python for android (p4a) specific

@@ -1,4 +1,4 @@
-from utils import split_and_cut
+from mtgworkshop.utils import split_and_cut
 
 
 def import_coll2(fname):

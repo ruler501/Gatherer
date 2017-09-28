@@ -1,3 +1,4 @@
+from kivy.metrics import sp
 from kivy.properties import ObjectProperty, NumericProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
@@ -75,15 +76,17 @@ class CardScreen(Screen):
         if value is None:
             return
 
+        self.rulings_box.bind(minimum_height=self.rulings_box.setter('height'))
         self.rulings_box.clear_widgets()
         for rule in value:
             t_label = RulingsBox(rule.date, rule.text)
             self.rulings_box.add_widget(t_label)
-        self.rulings_box.height = 60 * len(value)
+        self.rulings_box.height = sp(60) * len(value)
 
     def to_results(self):
-        self.manager.current = DefaultConfiguration.last_screen
-        self.manager.remove_widget(self)
+        manager = self.parent
+        manager.current = DefaultConfiguration.last_screen
+        manager.remove_widget(self)
 
     def add_card(self, board):
         current_deck = DefaultConfiguration.current_deck
@@ -101,9 +104,6 @@ class CardScreen(Screen):
 class RulingsBox(BoxLayout):
     date = StringProperty()
     text = StringProperty()
-
-    date_label = ObjectProperty()
-    text_label = ObjectProperty()
 
     def __init__(self, date, text, **kwargs):
         super(RulingsBox, self).__init__(**kwargs)

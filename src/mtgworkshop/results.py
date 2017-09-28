@@ -106,9 +106,9 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
     def on_touch_down(self, touch):
         if self.image.collide_point(*touch.pos) and self.screen is not None:
-            sc = self.screen
-            sc.manager.add_widget(CardScreen(self.card, name=self.card['name']))
-            sc.manager.current = self.card['name']
+            manager = self.screen.parent
+            manager.add_widget(CardScreen(self.card, name=self.card['name']))
+            manager.current = self.card['name']
 
 
 class ResultsScreen(Screen):
@@ -128,9 +128,10 @@ class ResultsScreen(Screen):
         DefaultConfiguration.last_screen = "Results"
 
     def new_search(self, *args):
-        self.manager.add_widget(SearchScreen(name="Search"))
-        self.manager.current = "Search"
-        self.manager.remove_widget(self)
+        manager = self.parent
+        manager.add_widget(SearchScreen(name="Search"))
+        manager.current = "Search"
+        manager.remove_widget(self)
 
 
 class ResultPage(RecycleView):

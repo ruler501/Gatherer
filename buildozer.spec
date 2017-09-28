@@ -1,13 +1,13 @@
 [app]
 
 # (str) Title of your application
-title = MTG Workshop
+title = Mage Workshop
 
 # (str) Package name
-package.name = mtgworkshop
+package.name = magesworkshop
 
 # (str) Package domain (needed for android/ios packaging)
-package.domain = com.mtgworkshop
+package.domain = com.magesworkshop
 
 # (str) Source code where the main.py live
 source.dir = .
@@ -25,7 +25,7 @@ source.include_patters = res/*,cache/*,src/*,cache/images/.gitignore
 #source.exclude_dirs = tests, bin
 
 # (list) List of exclusions using pattern matching
-source.exclude_patterns = create_db.py
+source.exclude_patterns = create_db.py, workshop-release.jks, requirements.txt, *pycache*, bin/*, *buildozer*, src/res/databse.schema
 
 # (str) Application versioning (method 1)
 version = 0.0.1

@@ -16,7 +16,7 @@ source.dir = .
 #source.include_exts = 
 
 # (list) List of inclusions using pattern matching
-source.include_patters = res/*,cache/*,src/*,cache/images/.gitignore
+source.include_patters = res/*,cache/*,src/*
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec
@@ -25,7 +25,7 @@ source.include_patters = res/*,cache/*,src/*,cache/images/.gitignore
 #source.exclude_dirs = tests, bin
 
 # (list) List of exclusions using pattern matching
-source.exclude_patterns = create_db.py, workshop-release.jks, requirements.txt, *pycache*, bin/*, *buildozer*, src/res/databse.schema
+source.exclude_patterns = create_db.py, workshop-release.jks, requirements.txt, *pycache*, bin/*, *buildozer*, src/res/databse.schema, cache/images/*.jpeg
 
 # (str) Application versioning (method 1)
 version = 0.0.1

@@ -1,6 +1,5 @@
 import functools
 import itertools
-import math
 import os
 import pickle
 import urllib.request
@@ -9,14 +8,17 @@ from collections import defaultdict
 from threading import Thread
 
 from kivy.clock import mainthread
+from kivy.core.image import Image as CoreImage
 from kivy.garden.androidtabs import AndroidTabsBase
 from kivy.graphics.texture import Texture
 from kivy.metrics import sp
-from kivy.properties import BooleanProperty, ListProperty, StringProperty
+from kivy.properties import BooleanProperty, ListProperty, NumericProperty, \
+    ObjectProperty, StringProperty
+from kivy.resources import resource_find
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
+from kivy.uix.widget import Widget
 
 
 class MultiLineLabel(Label):
@@ -39,16 +41,43 @@ class MultiLineLabel(Label):
         self.on_size(self, self.size)
 
 
+class ManaImage(Widget):
+    im_tex = ObjectProperty()
+
+    def __init__(self, im_tex, **kwargs):
+        self.im_tex = im_tex
+        super(ManaImage, self).__init__(**kwargs)
+
+
 class ManaCost(RelativeLayout):
-    symbols = ['W', 'U', 'B', 'R', 'G', 'C', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'X']
+    symbols = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11',
+               '12', '13', '14', '15', '16', '17', '18', '19', '20', 'X', 'Y',
+               'Z', 'W', 'U', 'B', 'R', 'G', 'S', 'W/U', 'W/B', 'U/B', 'U/R',
+               'B/R', 'B/G', 'R/W', 'R/G', 'G/W', 'G/U', 'T', 'Q', '∞', '½',
+               'FET', '4ET', 'OW', None, None, None, None, None, None, None,
+               None, None, None, None, None, None]
     mana_cost = StringProperty('', allownone=True)
+    full_texture = ObjectProperty(None, allownone=True)
     MANA_SIZE = sp(18)
 
     def __init__(self, **kwargs):
         self.cache_images = defaultdict(list)
+        file_name = resource_find('res/mana.png')
+        if file_name is not None:
+            self.full_image = CoreImage(file_name, mipmap=True)
+            self.full_image.bind(on_texture=self.set_full_texture)
+            self.full_texture = self.full_image.texture
+        else:
+            print("Can't load mana images error in resource lookup")
         super(ManaCost, self).__init__(**kwargs)
 
+    def set_full_texture(self, *args):
+        print("Setting full texture")
+        self.full_texture = self.full_image.texture
+
     def on_mana_cost(self, instance, value):
+        if self.full_texture is None:
+            return
         self.clear_widgets()
         if value is None:
             return
@@ -62,16 +91,14 @@ class ManaCost(RelativeLayout):
             if len(self.cache_images[m]) > 0:
                 mana_image = self.cache_images[m].pop()
             elif m in self.symbols:
-                mana_image = Image(source='res/{}.png'.format(m),
-                                   width=self.MANA_SIZE,
-                                   allow_stretch=True,
-                                   keep_ratio=True,
-                                   mipmap=True,
-                                   size_hint=(None, None))
+                ind = self.symbols.index(m)
+                x = ind % 10
+                y = ind // 10
+                mana_image = ManaImage(self.full_texture.get_region(128 * x, 128 * (6 - y), 128, 128))
             else:
-                mana_image = Label(text=m, color=[0, 0, 0, 1])
-            mana_image.size = (self.MANA_SIZE, self.MANA_SIZE)
-            mana_image.pos = (self.MANA_SIZE * 1.1 * count, -self.MANA_SIZE * 2)
+                mana_image = Label(text=m, color=[0, 0, 0, 1],
+                                   size=(self.MANA_SIZE, self.MANA_SIZE))
+            mana_image.pos = (self.MANA_SIZE * 1.1 * count, self.MANA_SIZE)
             self.add_widget(mana_image)
             pre_cache_images[m].append(mana_image)
             count += 1
@@ -162,58 +189,65 @@ class Gradient(object):
         return texture
 
 
-class CroppedImage(Image):
-    skip = BooleanProperty(False)
+class CroppedImage(Widget):
+    im_tex = ObjectProperty(allownone=True)
     crop_to = ListProperty(None, allownone=True)
-    original_size = ListProperty(None, allownone=True)
-    scale_to = ListProperty(None, allownone=True)
+    original_height = NumericProperty(1, allownone=True)
+    source = StringProperty()
+    mipmap = BooleanProperty(True)
 
     def __init__(self, **kwargs):
-        self.old_texture_update = self.texture_update
+        self.image = None
         super(CroppedImage, self).__init__(**kwargs)
-        self.texture_update = self.on_image_loaded
-        self.real_texture = None
 
-    def on_image_loaded(self, *args):
-        if self.crop_to is None or self.original_size is None \
-                or len(self.crop_to) != 4 or len(self.original_size) != 2:
+    def crop_image(self, *args):
+        if self.image.texture is None:
             return
-        old_ratio = self.get_image_ratio()
-        correct_ratio = self.original_size[0] / float(self.original_size[1])
-        if math.isclose(old_ratio, correct_ratio, abs_tol=0.1):
-            ratio = self.texture.height / self.original_size[1]
-            x, y, width, height = (a * ratio for a in self.crop_to)
-            self.texture = self.real_texture = \
-                self.texture.get_region(x, self.texture.height - y - height, width, height)
-            self._coreimage.unbind(on_texture=self.on_image_loaded)
+        ratio = self.image.texture.height / self.original_height
+        x, y, width, height = (a * ratio for a in self.crop_to)
+        self.im_tex = \
+            self.image.texture.get_region(x, self.image.texture.height - y - height,
+                                          width, height)
 
-    def on_texture(self, instance, value):
-        real_texture = getattr(self, 'real_texture')
-        if real_texture is not None and self.texture != real_texture:
-            self.texture = real_texture
-        if self.skip:
-            return
-        self._coreimage.bind(on_texture=self.on_image_loaded)
-        self.skip = True
-        self.on_image_loaded()
-        if self.scale_to is not None and len(self.scale_to) == 2:
-            self.width = self.scale_to[0]
-            self.height = self.scale_to[1]
+    def render_image(self, *args):
+        self.im_tex = self.image.texture
 
     def on_source(self, instance, value):
-        self.skip = False
-        self.real_texture = None
-        self.old_texture_update()
+        if value is None:
+            return
+
+        file_name = resource_find(value)
+        # file_name = str(value)
+        if file_name is None or not os.path.exists(file_name):
+            print("Could not locate file with", value)
+            return
+        try:
+            self.image = CoreImage(file_name, mipmap=self.mipmap)
+        except:
+            if isinstance(self.parent, CachedImage):
+                os.remove(file_name)
+                old_source = self.parent.source
+                self.parent.source = 'res/loading.png'
+                self.parent.source = old_source
+            print("Something was wrong with the image file", file_name)
+            return
+
+        if self.crop_to is None or self.original_height is None or \
+                self.original_height == 0 or len(self.crop_to) != 4:
+            self.image.bind(on_texture=self.render_image)
+            self.render_image()
+        else:
+            self.image.bind(on_texture=self.crop_image)
+            self.crop_image()
 
 
 class CachedImage(BoxLayout):
-    image_location = StringProperty('res/loading.jpeg')
+    image_location = StringProperty()
 
-    allow_stretch = BooleanProperty(True)
-    keep_ratio = BooleanProperty(True)
     source = StringProperty()
-    original_size = ListProperty(None, allownone=True)
+    original_height = NumericProperty(1)
     crop_to = ListProperty(None, allownone=True)
+    mipmap = BooleanProperty(True)
 
     cache_path = 'cache/images/{}'
 
@@ -229,6 +263,7 @@ class CachedImage(BoxLayout):
             if os.path.exists(cache_path):
                 self.image_location = cache_path
             else:
+                self.image_location = 'res/loading.png'
                 get_thread = Thread(target=self.download_image, args=(value,))
                 get_thread.start()
         else:

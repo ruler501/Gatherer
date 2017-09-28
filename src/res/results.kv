@@ -23,17 +23,14 @@
         id: image
         size_hint: None, None
         size: dp(135), dp(100)
-        allow_stretch: True
-        keep_ratio: True
         source: result.image_url
-        scale_to: dp(135), dp(100)
-        original_size: 233, 311
+        original_height: 311
         crop_to: 15, 35, 190, 140
     Label:
         text: result.count
         color: 0, 0, 0, 1
         font_size: sp(64)
-        size_hint: 0.035, None
+        size_hint: 0.05, None
         height: dp(100)
     BoxLayout:
         orientation: 'vertical'
@@ -66,13 +63,3 @@
             font_size: sp(16)
             text: result.set_name
             text_size: self.size
-
-<CachedCardArt>:
-    id: cache
-    sub_image: image
-    CardArt:
-        id: image
-        source: cache.image_location
-        height: cache.height
-        allow_stretch: cache.allow_stretch
-        keep_ratio: cache.keep_ratio

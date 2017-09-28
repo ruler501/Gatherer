@@ -2,22 +2,14 @@
     size: sp(18), sp(18)
     canvas:
         Rectangle:
-            texture: self.im_tex
+            texture: self.texture
             pos: self.pos
             size: sp(18), sp(18)
 
 <CachedImage>:
-    id: cache
-    CroppedImage:
-        source: cache.image_location
-        height: cache.height
-        original_height: cache.original_height
-        crop_to: cache.crop_to
-        mipmap: True
-
-<CroppedImage>:
-    canvas:
+    id: image
+    canvas.before:
         Rectangle:
-            texture: self.im_tex
-            pos: self.pos
-            size: self.size
+            texture: image.texture
+            pos: image.pos
+            size: image.size

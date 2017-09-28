@@ -7,17 +7,24 @@ from kivy.uix.screenmanager import Screen
 from kivy.uix.scrollview import ScrollView
 
 from mtgworkshop.magic_db import Cards
+from mtgworkshop.utils import make_unique
 
 
 class SearchScreen(Screen):
     pass
 
 
-class NegateSelector(BoxLayout):
-    use_not = BooleanProperty(False)
+class CheckBoxSelector(BoxLayout):
+    check = ObjectProperty()
+    checked = BooleanProperty(False)
+    text = StringProperty()
+    default_value = BooleanProperty(False)
 
-    def set_use_not(self, value):
-        self.use_not = value
+    def set_checked(self, value):
+        self.checked = value
+
+    def on_default_value(self, instance, value):
+        self.check.active = self.default_value
 
 
 class OperationSelector(Button):
@@ -125,7 +132,7 @@ class FieldInput(BoxLayout):
             return query
         # if i > 0:
         #     query = getattr(query, self.conn_sel.get_connector())()
-        if self.neg_sel.use_not:
+        if self.neg_sel.checked:
             query = query.negated()
         kwargs = {self.field_sel.get_field(): self.text_sel.text}
         query = query._where(self.op_sel.get_operation(), **kwargs)
@@ -136,13 +143,11 @@ class SearchPage(ScrollView):
     inner_layout = ObjectProperty()
     sort_sel = ObjectProperty()
     screen = ObjectProperty()
+    unique = ObjectProperty()
 
     def on_inner_layout(self, instance, value):
         self.inner_layout.bind(minimum_height=self.inner_layout.setter('height'))
         self.add_row()
-
-    def on_screen(self, instance, value):
-        print(self.screen, 'screen value set')
 
     def add_row(self):
         row = FieldInput()
@@ -161,8 +166,9 @@ class SearchPage(ScrollView):
             query = child.update_query(i, query)
 
         cards = sorted(query.find_all(), key=self.sort_sel.get_sort())
+        if self.unique.checked:
+            cards = make_unique(cards, lambda x: x.name)
         next_page = ResultsScreen(cards, name="Results")
         manager = self.screen.parent
         manager.add_widget(next_page)
         manager.current = 'Results'
-        manager.remove_widget(self.screen)

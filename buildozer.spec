@@ -16,7 +16,7 @@ source.dir = .
 #source.include_exts = 
 
 # (list) List of inclusions using pattern matching
-source.include_patters = res/*,cache/*,src/*
+source.include_patterns = res/*, src/mtgworkshop/*.py, src/res/*.kv, cache/images/93.jpeg
 
 # (list) Source files to exclude (let empty to not exclude anything)
 #source.exclude_exts = spec

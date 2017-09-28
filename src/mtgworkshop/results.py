@@ -7,7 +7,6 @@ from kivy.uix.screenmanager import Screen
 
 from mtgworkshop.cards import CardScreen
 from mtgworkshop.configuration import DefaultConfiguration
-from mtgworkshop.search import SearchScreen
 from mtgworkshop.utils import Gradient
 
 
@@ -129,7 +128,6 @@ class ResultsScreen(Screen):
 
     def new_search(self, *args):
         manager = self.parent
-        manager.add_widget(SearchScreen(name="Search"))
         manager.current = "Search"
         manager.remove_widget(self)
 

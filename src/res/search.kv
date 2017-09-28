@@ -20,15 +20,26 @@
     inner_layout: inner_layout
     sort_sel: sort_sel
     size_hint: 1, None
+    unique: unique
     BoxLayout:
         size_hint: 1, None
         orientation: 'vertical'
         id: inner_layout
-        SortSelector:
-            pos_hint: {'right': 1}
-            size_hint: 0.25, None
-            height: dp(30)
-            id: sort_sel
+        BoxLayout:
+            size_hint: 1, None
+            orientation: 'horizontal'
+            CheckBoxSelector:
+                pos_hint: {'x': 0}
+                id: unique
+                text: 'Unique'
+                height: dp(30)
+                size_hint: 0.15, None
+                default_value: True
+            SortSelector:
+                pos_hint: {'right': 1}
+                size_hint: 0.25, None
+                height: dp(30)
+                id: sort_sel
 
 
 <FieldInput>:
@@ -46,9 +57,10 @@
     FieldSelector:
         id: field_sel
         size_hint: 0.125, 1
-    NegateSelector:
+    CheckBoxSelector:
         id: neg_sel
         size_hint: 0.05, 1
+        text: "Not"
     OperationSelector:
         id: op_sel
         field: field_sel.text
@@ -61,7 +73,7 @@
         size_hint: 0.025, 1
         on_release: self.parent.remove_row()
 
-<NegateSelector>:
+<CheckBoxSelector>:
     orientation: 'vertical'
     check: check
     CheckBox:
@@ -69,10 +81,10 @@
         pos_hint: {'center_x': 0.5}
         color: 0, 0, 1, 1
         size_hint: 0.1, 0.5
-        on_active: self.parent.set_use_not(args[1])
+        on_active: self.parent.set_checked(args[1])
     Label:
         color: 0, 0, 0, 1
-        text: "Not"
+        text: self.parent.text
         size_hint: 0.1, 0.5
         font_size: sp(14)
         pos_hint: {'center_x': 0.5}

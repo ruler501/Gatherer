@@ -11,10 +11,11 @@
                 orientation: 'vertical'
                 spacing: dp(5)
                 CachedImage:
-                    source: screen.image_url
-                    width: dp(432)
-                    height: dp(600)
                     size_hint: None, None
+                    size: dp(446), dp(622)
+                    source: screen.image_url
+#                    original_height: 300
+#                    crop_to: 0, 0, 216, 300
                     pos_hint: {'center_x': 0.5}
                 BoxLayout:
                     size_hint: 0.9, None
@@ -28,7 +29,6 @@
                         font_size: sp(16)
                     ManaCost:
                         mana_cost: screen.mana_cost
-                        
                 BoxLayout:
                     orientation: 'horizontal'
                     size_hint: 0.9, None

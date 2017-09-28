@@ -42,10 +42,10 @@ class MultiLineLabel(Label):
 
 
 class ManaImage(Widget):
-    im_tex = ObjectProperty()
+    texture = ObjectProperty()
 
-    def __init__(self, im_tex, **kwargs):
-        self.im_tex = im_tex
+    def __init__(self, texture, **kwargs):
+        self.texture = texture
         super(ManaImage, self).__init__(**kwargs)
 
 
@@ -62,7 +62,7 @@ class ManaCost(RelativeLayout):
 
     def __init__(self, **kwargs):
         self.cache_images = defaultdict(list)
-        file_name = resource_find('res/mana.png')
+        file_name = resource_find('res/Mana.png')
         if file_name is not None:
             self.full_image = CoreImage(file_name, mipmap=True)
             self.full_image.bind(on_texture=self.set_full_texture)
@@ -72,7 +72,6 @@ class ManaCost(RelativeLayout):
         super(ManaCost, self).__init__(**kwargs)
 
     def set_full_texture(self, *args):
-        print("Setting full texture")
         self.full_texture = self.full_image.texture
 
     def on_mana_cost(self, instance, value):
@@ -189,70 +188,20 @@ class Gradient(object):
         return texture
 
 
-class CroppedImage(Widget):
-    im_tex = ObjectProperty(allownone=True)
-    crop_to = ListProperty(None, allownone=True)
-    original_height = NumericProperty(1, allownone=True)
-    source = StringProperty()
-    mipmap = BooleanProperty(True)
-
-    def __init__(self, **kwargs):
-        self.image = None
-        super(CroppedImage, self).__init__(**kwargs)
-
-    def crop_image(self, *args):
-        if self.image.texture is None:
-            return
-        ratio = self.image.texture.height / self.original_height
-        x, y, width, height = (a * ratio for a in self.crop_to)
-        self.im_tex = \
-            self.image.texture.get_region(x, self.image.texture.height - y - height,
-                                          width, height)
-
-    def render_image(self, *args):
-        self.im_tex = self.image.texture
-
-    def on_source(self, instance, value):
-        if value is None:
-            return
-
-        file_name = resource_find(value)
-        # file_name = str(value)
-        if file_name is None or not os.path.exists(file_name):
-            print("Could not locate file with", value)
-            return
-        try:
-            self.image = CoreImage(file_name, mipmap=self.mipmap)
-        except:
-            if isinstance(self.parent, CachedImage):
-                os.remove(file_name)
-                old_source = self.parent.source
-                self.parent.source = 'res/loading.png'
-                self.parent.source = old_source
-            print("Something was wrong with the image file", file_name)
-            return
-
-        if self.crop_to is None or self.original_height is None or \
-                self.original_height == 0 or len(self.crop_to) != 4:
-            self.image.bind(on_texture=self.render_image)
-            self.render_image()
-        else:
-            self.image.bind(on_texture=self.crop_image)
-            self.crop_image()
-
-
 class CachedImage(BoxLayout):
     image_location = StringProperty()
 
     source = StringProperty()
-    original_height = NumericProperty(1)
+    original_height = NumericProperty(1, allownone=True)
     crop_to = ListProperty(None, allownone=True)
     mipmap = BooleanProperty(True)
+    texture = ObjectProperty()
 
     cache_path = 'cache/images/{}'
 
     def __init__(self, image_format='.jpeg', **kwargs):
         self.image_format = image_format
+        self.image = None
         if 'source' in kwargs:
             self.source = kwargs['source']
         super(CachedImage, self).__init__(**kwargs)
@@ -263,11 +212,15 @@ class CachedImage(BoxLayout):
             if os.path.exists(cache_path):
                 self.image_location = cache_path
             else:
-                self.image_location = 'res/loading.png'
+                self.saved_crop_to = self.crop_to
+                self.saved_original_height = self.original_height
+                self.crop_to = []
+                self.original_height = None
                 get_thread = Thread(target=self.download_image, args=(value,))
                 get_thread.start()
+                self.image_location = 'res/loading.jpeg'
         else:
-            self.image_location = value
+            self.image_location = self.source
 
     def get_cached_path(self, original_value):
         res = original_value[1:][-20:]
@@ -285,8 +238,53 @@ class CachedImage(BoxLayout):
 
     def download_image(self, value):
         cache_path = self.get_cached_path(value)
-        print(urllib.request.urlretrieve(value, cache_path))
+        urllib.request.urlretrieve(value, cache_path)
+        self.crop_to = self.saved_crop_to
+        self.original_height = self.saved_original_height
         self.set_image_location(cache_path)
+
+    def crop_image(self, *args):
+        if self.image.texture is None:
+            return
+        theight = self.image.texture.height
+        ratio = theight / self.original_height
+        x, y, width, height = (a * ratio for a in self.crop_to)
+        self.texture = \
+            self.image.texture.get_region(x, theight - y - height,
+                                          width, height)
+
+    def render_image(self, *args):
+        self.texture = self.image.texture
+
+    def on_image_location(self, instance, value):
+        if value is None:
+            return
+
+        file_name = resource_find(value)
+        if file_name is None or not os.path.exists(file_name):
+            print("Could not locate file with", value)
+            return
+
+        try:
+            self.image = CoreImage(file_name, mipmap=self.mipmap)
+        except:
+            if isinstance(self.parent, CachedImage):
+                os.remove(file_name)
+                old_source = self.parent.source
+                self.parent.source = 'res/loading.jpeg'
+                self.parent.source = old_source
+            print("Something was wrong with the image file", file_name)
+            return
+
+        if self.crop_to is None or self.original_height is None or \
+                self.original_height == 0 or len(self.crop_to) != 4:
+            self.image.bind(on_texture=self.render_image)
+            self.texture = self.image.texture
+            print('Loaded Without Cropping', file_name)
+            print(self.texture.width, self.texture.height)
+        else:
+            self.image.bind(on_texture=self.crop_image)
+            self.crop_image()
 
 
 class ThreadWithReturnValue(Thread):

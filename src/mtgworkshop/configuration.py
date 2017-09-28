@@ -128,14 +128,12 @@ class ConfigurationScreen(Screen):
         self.lookup_table = []
         for key in configuration.cached_keys:
             if os.path.exists(configuration[key]):
-                print(key, 'path')
                 current_value = os.path.dirname(os.path.realpath(configuration[key]))
                 inner_layout.add_widget(FileBrowser(size_hint=(1, None),
                                                     height=dp(400),
                                                     filters=['*.dec'],
                                                     path=current_value))
             else:
-                print(key, 'nonpath')
                 inner_layout.add_widget(ConfigurationOption(key, getattr(configuration, key)))
             self.lookup_table.append(key)
 

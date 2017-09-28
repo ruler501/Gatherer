@@ -38,7 +38,20 @@ class WorkshopApp(App):
         tab3.add_widget(sm)
         android_tabs.add_widget(tab3)
 
+        Window.bind(on_keyboard=self.onBackBtn)
+
         return android_tabs
+
+    def onBackBtn(self, window, key, *args):
+        """ To be called whenever user presses Back/Esc Key """
+        # If user presses Back/Esc Key
+        if key == 27:
+            # Do whatever you need to do, like check if there are any
+            # screens that you can go back to.
+            # return True if you don't want to close app
+            # return False if you do
+            return True
+        return False
 
     def on_start(self):
         import builtins
@@ -60,11 +73,18 @@ class WorkshopApp(App):
 if __name__ == '__main__':
     # Config.set('graphics', 'width', DefaultConfiguration.window_width)
     # Config.set('graphics', 'height', DefaultConfiguration.window_height)
-    print(os.listdir('cache/images'))
-    open('cache/images/' + os.listdir('cache/images')[0])
+    if not os.path.exists('cache/images'):
+        os.makedirs('cache/images')
+    # files = os.listdir('cache/images')
+    # print(files)
+    # import io
+    # from kivy.core.image import Image as CoreImage
+    # file_data = open('cache/images/93.jpeg', 'rb').read()
+    # print(len(file_data), file_data)
+    # data = io.BytesIO(file_data)
+    # img = CoreImage(data, ext='jpeg')
     # sys.exit()
-    # sys[test]
-    if not os.path.dirname(os.path.realpath(__file__)).startswith('/data/data/com.mtgworkshop.mtgworkshop'):
+    if not os.path.dirname(os.path.realpath(__file__)).startswith('/data/data/com.'):
         Window.size = (int(DefaultConfiguration.window_width), int(DefaultConfiguration.window_height))
     Window.clearcolor = [0.6, 0.6, 0.6, 1]
     WorkshopApp().run()

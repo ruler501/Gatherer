@@ -263,6 +263,7 @@ class DeckScreen(Screen):
 
     counts = StringProperty()
     deck_name = StringProperty()
+    deck_location = StringProperty(allownone=True)
 
     inner_layout = ObjectProperty()
     sort_sel = ObjectProperty()
@@ -281,17 +282,18 @@ class DeckScreen(Screen):
             self.load_deck(None)
         super(DeckScreen, self).__init__(**kwargs)
 
-    def load_deck(self, deck_name):
-        if deck_name is self.deck_name:
+    def load_deck(self, deck_location):
+        if deck_location is self.deck_location:
             return
-        if deck_name is None:
+        if deck_location is None:
             self.deck = Deck()
-        elif not os.path.exists(deck_name):
-            display_name = split_and_cut(deck_name, '/', -1, '\\', -1, '.dec', 0)
-            self.deck = Deck(display_name, deck_name)
+        elif not os.path.exists(deck_location):
+            display_name = split_and_cut(deck_location, '/', -1, '\\', -1, '.dec', 0)
+            self.deck = Deck(display_name, deck_location)
         else:
-            self.deck = Deck.import_dec(deck_name)
-        self.deck_name = self.deck.file_location
+            self.deck = Deck.import_dec(deck_location)
+        self.deck_name = self.deck.name
+        self.deck_location = self.deck.file_location
         DefaultConfiguration.current_deck = self.deck
         DefaultConfiguration.last_deck = self.deck.file_location
         self.deck.register_listener(self.update_deck)

@@ -1,3 +1,6 @@
+from functools import partial
+
+from kivy.clock import Clock
 from kivy.metrics import dp, sp
 from kivy.properties import BooleanProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
@@ -33,10 +36,10 @@ class OperationSelector(Button):
     def __init__(self, **kwargs):
         super(OperationSelector, self).__init__(**kwargs)
         self.text = 'Contains'
-        self.font_size = sp(16)
+        self.font_size = sp(14)
 
         self.drop_list = DropDown()
-        self.bind(on_release=self.drop_list.open)
+        self.bind(on_release=lambda x: Clock.schedule_once(partial(lambda x, y: self.drop_list.open(x), x), 0))
         self.drop_list.bind(on_select=lambda instance, x: setattr(self, 'text', x))
 
         self.on_field(None, self.field)
@@ -51,9 +54,9 @@ class OperationSelector(Button):
             else:
                 self.text = self.operations[0]
         for op in self.operations:
-            btn = Button(text=op, size_hint_y=None, height=dp(32))
+            btn = Button(text=op, size_hint_y=None, height=dp(22))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = sp(16)
+            btn.font_size = sp(14)
             self.drop_list.add_widget(btn)
 
     def on_field(self, instance, value):
@@ -82,12 +85,12 @@ class ConnectorSelector(Button):
 
         self.drop_list = DropDown()
         for conn in self.connectors:
-            btn = Button(text=conn, size_hint_y=None, height=dp(30))
+            btn = Button(text=conn, size_hint_y=None, height=dp(22))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = sp(16)
+            btn.font_size = sp(14)
             self.drop_list.add_widget(btn)
 
-        self.bind(on_release=self.drop_list.open)
+        self.bind(on_release=lambda x: Clock.schedule_once(partial(lambda x, y: self.drop_list.open(x), x), 0))
 
         self.drop_list.bind(on_select=lambda instance, x: setattr(self, 'text', x))
 
@@ -104,12 +107,12 @@ class FieldSelector(Button):
 
         self.drop_list = DropDown()
         for field in self.fields:
-            btn = Button(text=field, size_hint_y=None, height=dp(30))
+            btn = Button(text=field, size_hint_y=None, height=dp(22))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = sp(16)
+            btn.font_size = sp(14)
             self.drop_list.add_widget(btn)
 
-        self.bind(on_release=self.drop_list.open)
+        self.bind(on_release=lambda x: Clock.schedule_once(partial(lambda x, y: self.drop_list.open(x), x), 0))
 
         self.drop_list.bind(on_select=lambda instance, x: setattr(self, 'text', x))
 

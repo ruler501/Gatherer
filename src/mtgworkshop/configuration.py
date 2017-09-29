@@ -117,7 +117,10 @@ class FileChooserScreen(Screen):
     default_value = StringProperty()
 
     def __init__(self, configuration, key, **kwargs):
-        self.default_value = os.path.dirname(os.path.realpath(configuration[key]))
+        value = configuration[key]
+        if value is None:
+            value = 'cache'
+        self.default_value = os.path.dirname(os.path.realpath(value))
         self.key = key
         self.configuration = configuration
         super(FileChooserScreen, self).__init__(**kwargs)
@@ -157,7 +160,7 @@ class ConfigurationScreen(Screen):
         configuration = self.configuration
         self.lookup_table = []
         for key in configuration.cached_keys:
-            if os.path.exists(configuration[key]):
+            if key == 'last_deck':
                 inner_layout.add_widget(Button(text=key.replace('_', ' ').title(),
                                                size_hint=(1, None),
                                                height=dp(40),

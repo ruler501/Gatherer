@@ -34,7 +34,7 @@ class WorkshopApp(App):
 
         tab3 = MyTab(text="Settings")
         sm = ScreenManager()
-        sm.add_widget(ConfigurationScreen())
+        sm.add_widget(ConfigurationScreen(name='Config'))
         tab3.add_widget(sm)
         android_tabs.add_widget(tab3)
 

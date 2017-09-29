@@ -109,16 +109,21 @@ class Deck:
         with open(fname, encoding='utf-8') as dec_file:
             comment = True
             for line in dec_file:
-                if comment:
-                    line = line.strip()
-                    mvid = int(split_and_cut(line, 'mvid:', 1, ' ', 0))
-                    qty = int(split_and_cut(line, 'qty:', 1, ' ', 0))
-                    loc = split_and_cut(line, 'loc:', 1, ' ', 0)
-                    if loc == 'Deck':
-                        loc = 'Main'
-                    elif loc == 'SB':
-                        loc = 'Sideboard'
-                    deck.add_cards_by_mvid(loc, (mvid, qty))
+                try:
+                    if comment:
+                        line = line.strip()
+                        mvid = int(split_and_cut(line, 'mvid:', 1, ' ', 0))
+                        qty = int(split_and_cut(line, 'qty:', 1, ' ', 0))
+                        loc = split_and_cut(line, 'loc:', 1, ' ', 0)
+                        if loc == 'Deck':
+                            loc = 'Main'
+                        elif loc == 'SB':
+                            loc = 'Sideboard'
+                        deck.add_cards_by_mvid(loc, (mvid, qty))
+                except Exception as e:
+                    print("Failed to load line")
+                    print(line)
+                    print(e)
                 comment = not comment
         return deck
 
@@ -277,10 +282,16 @@ class DeckScreen(Screen):
         super(DeckScreen, self).__init__(**kwargs)
 
     def load_deck(self, deck_name):
+        if deck_name is self.deck_name:
+            return
         if deck_name is None:
             self.deck = Deck()
+        elif not os.path.exists(deck_name):
+            display_name = split_and_cut(deck_name, '/', -1, '\\', -1, '.dec', 0)
+            self.deck = Deck(display_name, deck_name)
         else:
             self.deck = Deck.import_dec(deck_name)
+        self.deck_name = self.deck.file_location
         DefaultConfiguration.current_deck = self.deck
         DefaultConfiguration.last_deck = self.deck.file_location
         self.deck.register_listener(self.update_deck)

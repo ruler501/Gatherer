@@ -106,7 +106,7 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
     def on_touch_down(self, touch):
         if self.image.collide_point(*touch.pos) and self.screen is not None:
             manager = self.screen.parent
-            manager.add_widget(CardScreen(self.card, name=self.card['name']))
+            manager.add_widget(CardScreen(self.card, self.screen.name, name=self.card['name']))
             manager.current = self.card['name']
 
 

@@ -1,15 +1,18 @@
 <ManaImage>:
     size: sp(18), sp(18)
     canvas:
+        Color:
+            rgba: 1, 1, 1, 1
         Rectangle:
             texture: self.texture
             pos: self.pos
             size: sp(18), sp(18)
 
-<CachedImage>:
-    id: image
-    canvas.before:
-        Rectangle:
-            texture: image.texture
-            pos: image.pos
-            size: image.size
+# <CachedImage>:
+#     canvas:
+#         Color:
+#             rgba: self.color
+#         Rectangle:
+#             texture: self.texture
+#             pos: self.pos
+#             size: self.size

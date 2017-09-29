@@ -22,16 +22,17 @@
     CachedImage:
         id: image
         size_hint: None, None
-        size: dp(135), dp(100)
+        size: dp(102), dp(75)
         source: result.image_url
         original_height: 300
         crop_to: 15, 35, 183, 135
+        allow_stretch: True
     Label:
         text: result.count
         color: 0, 0, 0, 1
-        font_size: sp(64)
+        font_size: sp(48)
         size_hint: 0.05, None
-        height: dp(100)
+        height: dp(75)
     BoxLayout:
         orientation: 'vertical'
         size_hint: 0.25, None
@@ -39,14 +40,14 @@
             text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, None
-            height: dp(50)
+            height: dp(37)
             font_size: sp(16)
             text: result.name
         Label:
             text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, None
-            height: dp(50)
+            height: dp(38)
             font_size: sp(16)
             text: result.full_type_line
     BoxLayout:
@@ -54,12 +55,12 @@
         size_hint: 0.25, 1
         ManaCost:
             size_hint: 1, None
-            height: dp(50)
+            height: dp(37)
             mana_cost: result.mana_cost
         Label:
             color: 0, 0, 0, 1
             size_hint: 1, None
-            height: dp(50)
+            height: dp(38)
             font_size: sp(16)
             text: result.set_name
             text_size: self.size

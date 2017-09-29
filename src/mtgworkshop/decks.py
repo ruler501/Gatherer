@@ -146,7 +146,7 @@ class Deck:
             for card, qty in cards:
                 res.append("///mvid:{0:} qty:{1:} name:{2:} loc:{3:}\n{4:}{1:} {2:}"
                            .format(card['multiverse_id'], qty, card['name'], board,
-                                   '' if not decked_compatible else 'SB:' if board == 'SB' else ''))
+                                   'SB:' if board == 'SB' or board == 'Sideboard' else ''))
         with open(fname, 'w', encoding='utf-8') as out_file:
             out_file.write('\n'.join(res))
 

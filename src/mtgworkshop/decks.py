@@ -36,30 +36,39 @@ class Deck:
         self.boards[board_name] = Counter()
 
     def add_cards(self, board, *cards):
-        self.add_cards_by_mvid(board, *(card['multiverse_id'] for card in cards))
+        for card in cards:
+            r_card, count = card, 1
+            if isinstance(card, (tuple, list)):
+                r_card, count = card
+            self.boards[board][r_card] += count
+        self.call_listeners()
 
     def add_cards_by_mvid(self, board, *mvids):
+        cards = []
         for mvid in mvids:
-            r_mvid, count = mvid, 1
             if isinstance(mvid, (tuple, list)):
                 r_mvid, count = mvid
-            self.boards[board][r_mvid] += count
-        self.call_listeners()
+                cards.append((Cards.find_by_mvid(r_mvid), count))
+        self.add_cards(board, *cards)
 
     def remove_cards(self, board, *cards):
-        self.remove_cards_by_mvid(board, *(card['multiverse_id'] for card in cards))
+        for card in cards:
+            r_card, count = card, 1
+            if isinstance(card, (tuple, list)):
+                r_card, count = card
+            self.boards[board][r_card] += count
+
+            if self.boards[board][r_card] <= 0:
+                del self.boards[board][r_card]
+        self.call_listeners()
 
     def remove_cards_by_mvid(self, board, *mvids):
+        cards = []
         for mvid in mvids:
-            r_mvid, count = mvid, 1
             if isinstance(mvid, (tuple, list)):
                 r_mvid, count = mvid
-            self.boards[board][r_mvid] -= count
-
-            if self.boards[board][r_mvid] <= 0:
-                del self.boards[board][r_mvid]
-
-        self.call_listeners()
+                cards.append((Cards.find_by_mvid(r_mvid), count))
+        self.remove_cards(board, *cards)
 
     def get_board(self, board):
         return self.boards[board]
@@ -70,8 +79,7 @@ class Deck:
     def get_sorted(self, key=Cards.default_sort_key):
         res = {}
         for board, cards in self.boards.items():
-            card_objects = ((Cards.find_by_mvid(card), count) for card, count in cards.items())
-            res[board] = sorted(card_objects, key=lambda x: key(x[0]))
+            res[board] = sorted(cards.items(), key=lambda x: key(x[0]))
         return res
 
     def format_count(self, name, board='Main'):
@@ -81,7 +89,7 @@ class Deck:
         return ((card, count)
                 for card, count
                 in self.boards[board].items()
-                if Cards.find_by_mvid(card)['name'] == name)
+                if card.name == name)
 
     def get_all_counts(self, name):
         return {board: self.format_count(name, board) for board in self.boards}
@@ -104,8 +112,7 @@ class Deck:
         """
         Returns a Deck
         """
-        trimmed_fname = split_and_cut(fname, '/', -1, '.dec', 0)
-        deck = Deck(name=trimmed_fname, file_location=fname)
+        boards = defaultdict(list)
         with open(fname, encoding='utf-8') as dec_file:
             comment = True
             for line in dec_file:
@@ -119,12 +126,18 @@ class Deck:
                             loc = 'Main'
                         elif loc == 'SB':
                             loc = 'Sideboard'
-                        deck.add_cards_by_mvid(loc, (mvid, qty))
+                        boards[loc].append((mvid, qty))
+                        print('adding', qty, mvid, 'to', loc)
                 except Exception as e:
-                    print("Failed to load line")
+                    print("Failed to parse line")
                     print(line)
                     print(e)
                 comment = not comment
+        trimmed_fname = split_and_cut(fname, '/', -1, '.dec', 0)
+        deck = Deck(name=trimmed_fname, file_location=fname)
+        for board, cards in boards.items():
+            deck.add_cards_by_mvid(board, *cards)
+        print(deck.boards)
         return deck
 
     def export_dec(self, fname=None, decked_compatible=False):
@@ -283,8 +296,9 @@ class DeckScreen(Screen):
         super(DeckScreen, self).__init__(**kwargs)
 
     def load_deck(self, deck_location):
-        if deck_location is self.deck_location:
+        if deck_location == self.deck_location:
             return
+
         if deck_location is None:
             self.deck = Deck()
         elif not os.path.exists(deck_location):

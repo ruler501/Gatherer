@@ -10,8 +10,9 @@ import mtgsdk
 
 from collections import Counter
 
-from magic_db import DB, Cards, Ruling
-from utils import make_unique
+sys.path.append(os.path.dirname(os.path.realpath(__file__)) + '/src')
+from mtgworkshop.magic_db import DB, Cards, Ruling
+from mtgworkshop.utils import make_unique
 
 
 DEBUG = False
@@ -65,7 +66,7 @@ def create_db(dest=DB):
                 combined = mtgsdk.Card()
                 copied = ('power', 'toughness', 'loyalty', 'life', 'hand', 'layout',
                           'set', 'set_name', 'multiverse_id', 'rarity', 'watermark',
-                          'artist', 'image_url', 'number', 'legalities', 'rulings')
+                          'artist', 'number', 'legalities', 'rulings')
                 slashed = ('name', 'mana_cost', 'type', 'text', 'flavor',
                            'original_text', 'original_type')
                 appended = ('supertypes', 'types', 'subtypes', 'colors', 'color_identity')
@@ -124,7 +125,6 @@ def create_db(dest=DB):
                 lambda x: getattr(x, 'set'),
                 lambda x: getattr(x, 'flavor'),
                 lambda x: getattr(x, 'artist'),
-                lambda x: getattr(x, 'image_url'),
                 lambda x: getattr(x, 'original_text'),
                 lambda x: getattr(x, 'original_type'),
                 lambda x: getattr(x, 'number')

@@ -1,0 +1,60 @@
+<DeckScreen>:
+    id: screen
+    inner_layout: inner_layout
+    sort_sel: sort_sel
+    BoxLayout:
+        orientation: 'vertical'
+        SortSelector:
+            pos_hint: {'right': 1}
+            size_hint: 0.25, 0.1
+            id: sort_sel
+            screen: screen
+        ScrollView:
+            scroll_wheel_distance: dp(40)
+            size_hint: 1, 1
+            BoxLayout:
+                id: inner_layout
+                orientation: 'vertical'
+                size_hint: 1, None
+                Label:
+                    canvas.before:
+                        Color:
+                            rgba: 0.15, 0.15, 0.15, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    text: screen.deck_name
+                    text_size: self.size
+                    halign: 'center'
+                    size_hint: 1, None
+                    height: dp(40)
+                    font_size: sp(32)
+                Label:
+                    canvas.before:
+                        Color:
+                            rgba: 0.15, 0.15, 0.15, 1
+                        Rectangle:
+                            pos: self.pos
+                            size: self.size
+                    text: screen.counts
+                    text_size: self.size
+                    halign: 'center'
+                    size_hint: 1, None
+                    height: dp(40)
+                    font_size: sp(32)
+
+<Board>:
+    orientation: 'vertical'
+    id: board
+    size_hint: 1, None
+    Label:
+        canvas.before:
+            Color:
+                rgba: 0.15, 0.15, 0.15, 1
+            Rectangle:
+                pos: self.pos
+                size: self.size
+        height: dp(60)
+        font_size: sp(40)
+        size_hint: 1, None
+        text: board.title

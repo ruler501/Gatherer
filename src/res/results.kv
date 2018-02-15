@@ -1,50 +1,66 @@
 <ResultPage>:
     viewclass: 'CardResult'
+    scroll_wheel_distance: dp(40)
     RecycleBoxLayout:
         spacing: dp(10)
-        default_size: None, dp(112)
+        default_size: None, dp(100)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
         orientation: 'vertical'
 
 <CardResult>:
+    height: self.minimum_height
+    id: result
     canvas.before:
-        Color:
-            rgba: self.back_col
         Rectangle:
-            pos: self.pos
-            size: self.size
+            pos: result.pos
+            size: result.size
+            texture: result.back_texture
     orientation: 'horizontal'
-    mana_render: mana_render
     image: image
-    AsyncImage:
+    CachedImage:
         id: image
-        size_hint: 0.15, 1
-        source: self.parent.image_url
-        on_touch_down: self.parent.show_card(args[0])
+        size_hint: None, None
+        size: dp(102), dp(75)
+        source: result.image_url
+        original_height: 300
+        crop_to: 15, 35, 183, 135
+        allow_stretch: True
+    Label:
+        text: result.count
+        color: 0, 0, 0, 1
+        font_size: sp(48)
+        size_hint: 0.05, None
+        height: dp(75)
     BoxLayout:
         orientation: 'vertical'
-        size_hint: 0.25, 1
+        size_hint: 0.25, None
         Label:
             text_size: self.size
             color: 0, 0, 0, 1
-            size_hint: 1, 0.5
-            text: self.parent.parent.name
+            size_hint: 1, None
+            height: dp(37)
+            font_size: sp(16)
+            text: result.name
         Label:
             text_size: self.size
             color: 0, 0, 0, 1
-            size_hint: 1, 0.5
-            text: self.parent.parent.full_type_line
+            size_hint: 1, None
+            height: dp(38)
+            font_size: sp(16)
+            text: result.full_type_line
     BoxLayout:
         orientation: 'vertical'
         size_hint: 0.25, 1
         ManaCost:
-            id: mana_render
-            size_hint: 1, 0.5
+            size_hint: 1, None
+            height: dp(37)
+            mana_cost: result.mana_cost
         Label:
             color: 0, 0, 0, 1
-            size_hint: 1, 0.5
-            pos_hint: {'x': 0, 'top': 0}
-            text: self.parent.parent.set_name
+            size_hint: 1, None
+            height: dp(38)
+            font_size: sp(16)
+            text: result.set_name
             text_size: self.size

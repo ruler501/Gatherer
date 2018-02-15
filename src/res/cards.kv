@@ -2,86 +2,143 @@
     id: screen
     rulings_box: rulings_box
     inner_layout: inner_layout
-    ScrollView:
-        size_hint: 1, None
-        size: (800, 600)
-        BoxLayout:
-            id: inner_layout
-            size_hint: 1,None
-            orientation: 'vertical'
-            spacing: dp(5)
-            AsyncImage:
-                source: screen.image_url
-                allow_stretch: True
-                keep_ratio: True
-                height: '4in'
-                size_hint: (1, None)
+    BoxLayout:
+        ScrollView:
+            size_hint: 1, 1
             BoxLayout:
-                orientation: 'horizontal'
-                size_hint: 1, None
-                height: 20
-                Label:
-                    color: 0, 0, 0, 1
-                    text: screen.name
-                    text_size: self.size
-                ManaCost:
-                    mana_cost: screen.mana_cost
-                    
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint: 1, None
-                height: 20
-                Label:
-                    color: 0, 0, 0, 1
-                    text: screen.type_line
-                    text_size: self.size
-                Label:
-                    color: 0, 0, 0, 1
-                    text: screen.power_tough
-                    text_size: self.size
-            BoxLayout:
-                orientation: 'horizontal'
-                size_hint: 1, None
-                height: 20
-                Label:
-                    color: 0, 0, 0, 1
-                    text: screen.set_name
-                    text_size: self.size
-                Label:
-                    color: 0, 0, 0, 1
-                    text: screen.rarity
-                    text_size: self.size
-            MultiLineLabel:
-                size_hint: 1, None
-                color: 0, 0, 0, 1
-                text: screen.text
-                text_size: self.size
-            BoxLayout:
-                size_hint: 1, None
+                id: inner_layout
+                size_hint: 1,None
                 orientation: 'vertical'
-                spacing: 5
-                id: rulings_box
-            Button:
-                size_hint: 1, None
-                height: 30
-                text: "Return to Results"
-                on_release: screen.to_results()
+                spacing: dp(5)
+                CachedImage:
+                    size_hint: None, None
+                    size: dp(446), dp(622)
+                    source: screen.image_url
+                    allow_stretch: True
+                    pos_hint: {'center_x': 0.5}
+                BoxLayout:
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
+                    orientation: 'horizontal'
+                    height: dp(20)
+                    Label:
+                        color: 0, 0, 0, 1
+                        text: screen.name
+                        text_size: self.size
+                        font_size: sp(16)
+                    ManaCost:
+                        mana_cost: screen.mana_cost
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
+                    height: dp(20)
+                    Label:
+                        color: 0, 0, 0, 1
+                        text: screen.type_line
+                        text_size: self.size
+                        font_size: sp(16)
+                    Label:
+                        color: 0, 0, 0, 1
+                        text: screen.power_tough
+                        text_size: self.size
+                        font_size: sp(16)
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
+                    height: dp(20)
+                    Label:
+                        color: 0, 0, 0, 1
+                        text: screen.set_name
+                        text_size: self.size
+                        font_size: sp(16)
+                    Label:
+                        color: 0, 0, 0, 1
+                        text: screen.rarity
+                        text_size: self.size
+                        font_size: sp(16)
+                MultiLineLabel:
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
+                    color: 0, 0, 0, 1
+                    text: screen.text or ''
+                    text_size: self.size
+                    font_size: sp(16)
+                MultiLineLabel:
+                    size_hint: 0.8, None
+                    pos_hint: {'center_x': 0.5}
+                    color: 0, 0, 0, 1
+                    text: ('[i]' + screen.flavor + '[/i]') if screen.flavor is not None else ''
+                    text_size: self.size
+                    font_size: sp(16)
+                    markup: True
+                BoxLayout:
+                    size_hint: 0.9, None
+                    pos_hint: {'center_x': 0.5}
+                    orientation: 'vertical'
+                    spacing: dp(15)
+                    id: rulings_box
+                BoxLayout:
+                    size_hint: 1, None
+                    orientation: 'horizontal'
+                    spacing: dp(5)
+                    Button:
+                        text: '-'
+                        on_release: screen.remove_card('Sideboard')
+                        size_hint: 0.2, None
+                        height: dp(40)
+                        font_size: sp(24)
+                    Label:
+                        text: screen.side_count
+                        size_hint: 0.1, None
+                        height: dp(40)
+                        font_size: sp(16)
+                    Button:
+                        text: '+'
+                        on_release: screen.add_card('Sideboard')
+                        size_hint: 0.2, None
+                        height: dp(40)
+                        font_size: sp(24)
+                    Button:
+                        text: '-'
+                        on_release: screen.remove_card('Main')
+                        size_hint: 0.2, None
+                        height: dp(40)
+                        font_size: sp(24)
+                    Label:
+                        text: screen.main_count
+                        size_hint: 0.1, None
+                        height: dp(40)
+                        font_size: sp(16)
+                    Button:
+                        text: '+'
+                        on_release: screen.add_card('Main')
+                        size_hint: 0.2, None
+                        height: dp(40)
+                        font_size: sp(24)
+                Button:
+                    size_hint: 1, None
+                    height: sp(50)
+                    text: "Return to Results"
+                    on_release: screen.to_results()
 
 <RulingsBox>:
+    spacing: dp(5)
     size_hint: 1, None
-    height: text_label.height
     orientation: 'horizontal'
-    date_label: date_label
-    text_label: text_label
+    height: self.minimum_height
     MultiLineLabel:
-        id: date_label
         color: 0, 0, 0, 1
         text: self.parent.date
-        text_size: (self.width, None)
-        size_hint: 0.15, None
+        text_size: self.size
+        size_hint: 0.2, None
+        font_size: sp(16)
+        pos_hint: {'top': 1}
     MultiLineLabel:
         id: text_label
         color: 0, 0, 0, 1
         text: self.parent.text
-        text_size: (self.width, None)
-        size_hint: 0.85, None
+        text_size: self.size
+        size_hint: 0.80, None
+        font_size: sp(16)

@@ -1,0 +1,27 @@
+<ConfigurationOption>:
+    id: option
+    orientation: 'horizontal'
+    text_sel: text_sel
+    size_hint: 1, None
+    Label:
+        text: option.key
+        size_hint: 0.2, None
+        height: dp(40)
+        font_size: sp(16)
+    TextInput:
+        id: text_sel
+        size_hint: 0.8, None
+        height: dp(40)
+        font_size: sp(16)
+        hint_text: option.default_value
+        
+<ConfigurationScreen>:
+    inner_layout: inner_layout
+    BoxLayout:
+        ScrollView:
+            size_hint: 1, 1
+            BoxLayout:
+                id: inner_layout
+                orientation: 'vertical'
+                size_hint: 1, None
+                spacing: dp(5)

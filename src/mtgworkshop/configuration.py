@@ -6,13 +6,14 @@ from weakref import WeakMethod
 from kivy.config import Config
 Config.set('input', 'mouse', 'mouse,multitouch_on_demand')
 
-from kivy.garden.filebrowser import FileBrowser
 from kivy.metrics import dp
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 # from kivy.uix.filechooser import FileChooserIconView
 from kivy.uix.screenmanager import Screen
+
+from external.filebrowser import FileBrowser
 
 
 CACHE_DIR = 'cache'
@@ -111,6 +112,38 @@ class ConfigurationOption(BoxLayout):
         return ' '.join(x[0].upper() + x[1:] for x in key.split('_'))
 
 
+class FileChooserScreen(Screen):
+    file_chooser = ObjectProperty()
+    default_value = StringProperty()
+
+    def __init__(self, configuration, key, **kwargs):
+        value = configuration[key]
+        if value is None:
+            value = 'cache'
+        self.default_value = os.path.dirname(os.path.realpath(value))
+        self.key = key
+        self.configuration = configuration
+        super(FileChooserScreen, self).__init__(**kwargs)
+
+    def on_file_chooser(self, instance, value):
+        self.file_chooser.bind(on_success=self.select_file,
+                               on_canceled=self.cancel)
+
+    def select_file(self, *largs):
+        print(largs)
+        selections = self.file_chooser.selection
+        if len(selections) == 0:
+            print("Nothing selected")
+
+        setattr(self.configuration, self.key, selections[0])
+        self.parent.current = 'Config'
+        self.parent.remove_widget(self)
+
+    def cancel(self, *largs):
+        self.parent.current = 'Config'
+        self.parent.remove_widget(self)
+
+
 class ConfigurationScreen(Screen):
     inner_layout = ObjectProperty()
 
@@ -127,18 +160,24 @@ class ConfigurationScreen(Screen):
         configuration = self.configuration
         self.lookup_table = []
         for key in configuration.cached_keys:
-            if os.path.exists(configuration[key]):
-                current_value = os.path.dirname(os.path.realpath(configuration[key]))
-                inner_layout.add_widget(FileBrowser(size_hint=(1, None),
-                                                    height=dp(400),
-                                                    filters=['*.dec'],
-                                                    path=current_value))
+            if key == 'last_deck':
+                inner_layout.add_widget(Button(text=key.replace('_', ' ').title(),
+                                               size_hint=(1, None),
+                                               height=dp(40),
+                                               on_release=self.add_file_chooser))
             else:
                 inner_layout.add_widget(ConfigurationOption(key, getattr(configuration, key)))
             self.lookup_table.append(key)
 
         inner_layout.add_widget(Button(text='Save', size_hint=(1, None), height=dp(40),
                                        on_release=lambda btn: self.save_settings()))
+
+    def add_file_chooser(self, button):
+        key = button.text.replace(' ', '_').lower()
+
+        manager = self.parent
+        manager.add_widget(FileChooserScreen(self.configuration, key, name="File"))
+        manager.current = "File"
 
     def save_settings(self):
         inner_layout = self.inner_layout

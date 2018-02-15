@@ -4,16 +4,17 @@ from collections import Counter, defaultdict
 from weakref import WeakMethod
 
 from kivy.clock import mainthread
+from kivy.metrics import dp, sp
 from kivy.properties import ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.dropdown import DropDown
 from kivy.uix.screenmanager import Screen
 
-from configuration import DefaultConfiguration
-from magic_db import Cards
-from results import CardResult
-from utils import split_and_cut
+from mtgworkshop.configuration import DefaultConfiguration
+from mtgworkshop.magic_db import Cards
+from mtgworkshop.results import CardResult
+from mtgworkshop.utils import split_and_cut
 
 
 class Deck:
@@ -105,7 +106,7 @@ class Deck:
         """
         trimmed_fname = split_and_cut(fname, '/', -1, '.dec', 0)
         deck = Deck(name=trimmed_fname, file_location=fname)
-        with open(fname) as dec_file:
+        with open(fname, encoding='utf-8') as dec_file:
             comment = True
             for line in dec_file:
                 if comment:
@@ -141,7 +142,7 @@ class Deck:
                 res.append("///mvid:{0:} qty:{1:} name:{2:} loc:{3:}\n{4:}{1:} {2:}"
                            .format(card['multiverse_id'], qty, card['name'], board,
                                    '' if not decked_compatible else 'SB:' if board == 'SB' else ''))
-        with open(fname, 'w') as out_file:
+        with open(fname, 'w', encoding='utf-8') as out_file:
             out_file.write('\n'.join(res))
 
 
@@ -201,9 +202,9 @@ class SortSelector(Button):
 
         self.drop_list = DropDown()
         for conn in sorted(self.sort_methods):
-            btn = Button(text=conn, size_hint_y=None, height=30)
+            btn = Button(text=conn, size_hint_y=None, height=dp(30))
             btn.bind(on_release=lambda btn: self.drop_list.select(btn.text))
-            btn.font_size = 16
+            btn.font_size = sp(16)
             self.drop_list.add_widget(btn)
 
         self.bind(on_release=self.drop_list.open)

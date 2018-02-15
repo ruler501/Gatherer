@@ -1,71 +1,83 @@
 CREATE TABLE cards (
-"name": NOT NULL TEXT PRIMARY KEY
-"mana_cost": TEXT
-"type_line" NOT NULL TEXT,
-"text" TEXT,
-"power" INTEGER,
-"toughness" INTEGER,
-"loyalty" INTEGER,
-"life" INTEGER,
-"hand" INTEGER,
-"layout" NOT NULL TEXT
-"alt_name" TEXT
-);
-
-CREATE TABLE supertypes (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"supertype": NOT NULL TEXT
-);
-
-CREATE TABLE types (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"type": NOT NULL TEXT
-);
-
-CREATE TABLE subtypes (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"subtype": NOT NULL TEXT
-);
-
-CREATE TABLE colors (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"color": NOT NULL TEXT
-);
-
-CREATE TABLE color_identity (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"color": NOT NULL TEXT
-);
-
-CREATE TABLE rulings (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"date": NOT NULL TEXT,
-"text": NOT NULL TEXT
-);
-
-CREATE TABLE rulings (
-FOREIGN KEY(card_name) REFERENCES cards(name),
-"legacy": NOT NULL BOOL,
-"modern": NOT NULL BOOL,
-"standard": NOT NULL BOOL,
-"commander": NOT NULL BOOL,
+    "name" TEXT NOT NULL PRIMARY KEY,
+    "mana_cost" TEXT,
+    "cmc" UNSIGNED INTEGER NOT NULL,
+    "type_line" TEXT NOT NULL,
+    "text" TEXT,
+    "power" INTEGER,
+    "toughness" INTEGER,
+    "loyalty" UNSIGNED INTEGER,
+    "life" INTEGER,
+    "hand" INTEGER,
+    "layout" TEXT NOT NULL,
+    "alt_name" TEXT UNIQUE
 );
 
 CREATE TABLE sets (
-"set_code" NOT NULL TEXT PRIMARY KEY,
-"set_name" NOT NULL TEXT
+    "set_code" TEXT NOT NULL PRIMARY KEY,
+    "set_name" TEXT NOT NULL UNIQUE
 );
 
+CREATE TABLE supertypes (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "supertype" TEXT NOT NULL
+);
+CREATE UNIQUE INDEX supertypes_row ON supertypes(card_name, supertype);
+CREATE INDEX supertypes_name ON supertypes(card_name);
+ 
+CREATE TABLE types (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "type" TEXT NOT NULL
+);
+CREATE UNIQUE INDEX types_row ON types(card_name, type);
+CREATE INDEX types_name ON types(card_name);
+
+CREATE TABLE subtypes (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "subtype" TEXT NOT NULL
+);
+CREATE UNIQUE INDEX subtypes_row ON subtypes(card_name, subtype);
+CREATE INDEX subtypes_name ON subtypes(card_name);
+
+CREATE TABLE colors (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "color" TEXT NOT NULL
+);
+CREATE UNIQUE INDEX colors_row ON colors(card_name, color);
+CREATE INDEX colors_name ON colors(card_name);
+
+CREATE TABLE color_identity (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "color" TEXT NOT NULL
+);
+CREATE UNIQUE INDEX color_identity_row ON color_identity(card_name, color);
+CREATE INDEX color_idenity_name ON color_identity(card_name);
+
+CREATE TABLE rulings (
+    "card_name" TEXT NOT NULL REFERENCES cards(name),
+    "date" TEXT NOT NULL,
+    "text" TEXT NOT NULL
+);
+CREATE UNIQUE INDEX rulings_row ON rulings(card_name, date, text);
+CREATE INDEX rulings_name ON rulings(card_name);
+ 
+-- CREATE TABLE bannings (
+--     "card_name" TEXT PRIMARY_KEY NOT NULL REFERENCES cards(name),
+--     "legacy" BOOL NOT NULL,
+--     "modern" BOOL NOT NULL,
+--     "standard" BOOL NOT NULL,
+--     "commander" BOOL NOT NULL,
+-- );
+
 CREATE TABLE printings (
-"multiverse_id" NOT NULL INTEGER PRIMARY KEY
-FOREIGN KEY(name) REFERENCES cards(name),
-"rarity" NOT NULL TEXT,
-"watermark" TEXT,
-FOREIGN KEY(set_code) REFERENCES sets(set_code),
-"flavor" TEXT,
-"artist" NOT NULL TEXT,
-"image_url" NOT NULL TEXT,
-"original_text" TEXT,
-"original_type" TEXT,
-"number" INTEGER,
+    "multiverse_id" UNSIGNED INTEGER NOT NULL PRIMARY KEY,
+    "name" TEXT NOT NULL REFERENCES cards(name),
+    "rarity" TEXT NOT NULL,
+    "watermark" TEXT,
+    "set_code" TEXT NOT NULL REFERENCES sets(set_code),
+    "flavor" TEXT,
+    "artist" TEXT NOT NULL,
+    "original_text" TEXT,
+    "original_type" TEXT,
+    "number" UNSIGNED INTEGER
 );

@@ -1,35 +1,36 @@
-from kivy.properties import ObjectProperty, StringProperty
+from kivy.properties import NumericProperty, ObjectProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.button import Button
 from kivy.uix.recycleview import RecycleView
 from kivy.uix.recycleview.views import RecycleDataViewBehavior
 from kivy.uix.screenmanager import Screen
 
-from cards import CardScreen
-from configuration import DefaultConfiguration
-from search import SearchScreen
-from utils import Gradient
+from mtgworkshop.cards import CardScreen
+from mtgworkshop.configuration import DefaultConfiguration
+from mtgworkshop.utils import Gradient
 
 
 class CardResult(BoxLayout, RecycleDataViewBehavior):
-    name = StringProperty('')
-    image_url = StringProperty('')
-    power = StringProperty('', allownone=True)
-    toughness = StringProperty('', allownone=True)
-    mana_cost = StringProperty('', allownone=True)
-    set_name = StringProperty('')
-    type_line = StringProperty('')
-    full_type_line = StringProperty('')
+    name = StringProperty()
+    image_url = StringProperty()
+    power = ObjectProperty(allownone=True)
+    toughness = ObjectProperty(allownone=True)
+    mana_cost = StringProperty(allownone=True)
+    set_name = StringProperty()
+    type_line = StringProperty()
+    rarity = StringProperty()
+    life = NumericProperty(None, allownone=True)
+    hand = NumericProperty(None, allownone=True)
+
     card = ObjectProperty()
     mana_render = ObjectProperty()
     back_texture = ObjectProperty(Gradient.horizontal([148, 162, 173, 255]))
     color_identity = ObjectProperty(allownone=True)
-    # life = NumericProperty('', allownone=True)
-    # hand = NumericProperty('', allownone=True)
 
     image = ObjectProperty()
     screen = ObjectProperty(None, allownone=True)
 
+    full_type_line = StringProperty('')
     count = StringProperty()
     board = StringProperty('Main')
 
@@ -57,10 +58,10 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
     def create_type_line(self):
         res = self.type_line
-        if 'Creature' in res or 'Vehicle' in res:
+        if self.power is not None and self.toughness is not None:
             res += ' {}/{}'.format(self.power, self.toughness)
-        # elif self.life is not None and self.hand is not None:
-        #     res += ' {}/{}'.format(int(self.life), int(self.hand))
+        if self.life is not None and self.hand is not None:
+            res += ' {}/{}'.format(int(self.life), int(self.hand))
         self.full_type_line = res
 
     def on_type_line(self, instance, value):
@@ -89,7 +90,8 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
         if colors is None or len(colors) == 0:
             color_vals = [colorlookup['Colorless']]
         elif len(colors) == 1:
-            color_vals = [colorlookup[colors[0]]]
+            color, *_ = colors
+            color_vals = [colorlookup[color]]
         elif len(colors) > 1:
             color_vals = [colorlookup[x] for x in sorted(colors, key=color_order.index)]
 
@@ -103,9 +105,9 @@ class CardResult(BoxLayout, RecycleDataViewBehavior):
 
     def on_touch_down(self, touch):
         if self.image.collide_point(*touch.pos) and self.screen is not None:
-            sc = self.screen
-            sc.manager.add_widget(CardScreen(self.card, name=self.card['name']))
-            sc.manager.current = self.card['name']
+            manager = self.screen.parent
+            manager.add_widget(CardScreen(self.card, name=self.card['name']))
+            manager.current = self.card['name']
 
 
 class ResultsScreen(Screen):
@@ -125,9 +127,9 @@ class ResultsScreen(Screen):
         DefaultConfiguration.last_screen = "Results"
 
     def new_search(self, *args):
-        self.manager.add_widget(SearchScreen(name="Search"))
-        self.manager.current = "Search"
-        self.manager.remove_widget(self)
+        manager = self.parent
+        manager.current = "Search"
+        manager.remove_widget(self)
 
 
 class ResultPage(RecycleView):

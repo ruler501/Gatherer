@@ -1,10 +1,18 @@
-<CachedImage>:
-    id: cache
-    CroppedImage:
-        source: cache.image_location
-        height: cache.height
-        allow_stretch: cache.allow_stretch
-        keep_ratio: cache.keep_ratio
-        original_size: cache.original_size
-        crop_to: cache.crop_to
-        mipmap: True
+<ManaImage>:
+    size: sp(18), sp(18)
+    canvas:
+        Color:
+            rgba: 1, 1, 1, 1
+        Rectangle:
+            texture: self.texture
+            pos: self.pos
+            size: sp(18), sp(18)
+
+# <CachedImage>:
+#     canvas:
+#         Color:
+#             rgba: self.color
+#         Rectangle:
+#             texture: self.texture
+#             pos: self.pos
+#             size: self.size

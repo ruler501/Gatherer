@@ -1,10 +1,9 @@
-import ast
 import functools
 import inspect
 import re
 import sqlite3
 
-from utils import disk_cache
+from mtgworkshop.utils import disk_cache, split_and_cut
 
 
 def regexp(expr, item):
@@ -14,66 +13,15 @@ def regexp(expr, item):
 DB = "res/cards.sqlite3"
 origins = r'(ORI)|(BFZ)|(OGW)|(SOI)|(EMN)|(KLD)|(AER)|(AKH)|(HOU)|(DDP)|(DDQ)|(DDR)|(DDS)|(E01)|(C15)|(C16)|(C17)|(CN2)'
 origins_list = origins.replace('(', '').replace(')', '').split('|')
-# DEBUG = True
+DEBUG = True
 DEBUG = False
-cards_var = ("printings", "rarity", "border", "watermark",
-             "loyalty", "set", "multiverse_id", "text", "type",
-             "life", "subtypes", "flavor", "rulings", "mana_cost",
-             "starter", "names", "timeshifted", "foreign_names",
-             "artist", "supertypes", "types", "colors", "source",
-             "id", "layout", "set_name", "power", "cmc", "name",
-             "legalities", "image_url", "color_identity",
-             "original_text", "number", "variations",
-             "release_date", "original_type", "hand", "toughness")
-var_type = \
-    {
-        'printings': 'list',
-        'rarity': 'string',
-        'border': 'string',  # Effectively unused, should phase out
-        'watermark': 'string',
-        'loyalty': 'int',
-        'set': 'string',
-        'multiverse_id': 'int',
-        'text': 'string',
-        'type': 'string',  # Full type line
-        'life': 'int',  # Vanguard only
-        'subtypes': 'list',
-        'flavor': 'string',
-        'rulings': 'list',  # Of dicts(date, text)
-        'mana_cost': 'string',  # In the form of ({.(/.)?})+
-        'starter': 'text',  # What does this do?
-        'names': 'list',  # Names for double faced cards
-        'timeshifted': 'text',  # What does this do?
-        'foreign_names': 'list',  # Of dicts(language, imageUrl, multiverseid, name)
-        'artist': 'string',
-        'supertypes': 'list',
-        'types': 'list',
-        'colors': 'list',
-        'source': 'string',  # Effectively unused should phase out
-        'id': 'bytes',  # Can probably be hidden
-        'layout': 'string',
-        'set_name': 'string',
-        'power': 'string',
-        'cmc': 'int',
-        'name': 'string',
-        'legalities': 'list',  # Of dicts(legality, format)
-        'image_url': 'string',
-        'color_identity': 'list',
-        'original_text': 'string',
-        'number': 'int',  # Collectors Number
-        'variations': 'list',  # mvids for things with multiple arts in same set
-        'release_date': 'string',  # Effectively unused
-        'original_type': 'string',
-        'hand': 'int',  # Vanguard only
-        'toughness': 'string',
-        'type_line': 'string'
-    }
 
 
 def get_conn():
     if get_conn.conn is None:
         get_conn.conn = sqlite3.connect(DB)
         get_conn.conn.create_function("REGEXP", 2, regexp)
+        get_conn.conn.row_factory = sqlite3.Row
     return get_conn.conn
 
 
@@ -89,84 +37,166 @@ get_conn.conn = None
 get_cursor.cursor = None
 
 
-def row_to_dict(row):
-    res = {}
+class Ruling:
+    def __init__(self, date, text):
+        self.date = date
+        self.text = text
 
-    for var, val in zip(cards_var, row):
-        if var == 'type':
-            var = 'type_line'
-        if val is None or val == 'None':
-            res[var] = None
-        elif var_type[var] == 'int':
-            try:
-                res[var] = int(val)
-            except ValueError:
-                res[var] = str(val)
-        elif var_type[var] == 'list':
-            res[var] = ast.literal_eval(val)
+    @staticmethod
+    def from_dict(dic):
+        if dic is None:
+            return None
+        return Ruling(dic['date'], dic['text'])
+
+
+class Card:
+    def __init__(self, row):
+        for var in row.keys():
+            setattr(self, var, row[var])
+
+        mvid = self.mvid = getattr(self, 'multiverse_id')
+        name = getattr(self, 'name')
+        if mvid is None or name is None:
+            raise ValueError('Did not set multiverse_id or name in row')
+        self.image_url = "http://gatherer.wizards.com/Handlers/Image.ashx?multiverseid={}&type=card".format(mvid)
+
+        set_types = [
+            ('supertypes', lambda x: x['supertype']),
+            ('types', lambda x: x['type']),
+            ('subtypes', lambda x: x['subtype']),
+            ('colors', lambda x: x['color']),
+            ('color_identity', lambda x: x['color']),
+            ('rulings', lambda x: Ruling(x['date'], x['text']))
+        ]
+
+        conn = get_conn()
+        for set_type, cons in set_types:
+            vals = conn.execute('select * from {} where card_name = ?'.format(set_type),
+                                (name,))
+            setattr(self, set_type, frozenset(cons(x) for x in vals))
+
+    def __eq__(self, other):
+        if isinstance(other, self.__class__):
+            return self.multiverse_id == other.multiverse_id
         else:
-            res[var] = str(val)
+            return NotImplemented
 
-    return res
+    def __ne__(self, other):
+        if isinstance(other, self.__class__):
+            return self.multiverse_id != other.multiverse_id
+        else:
+            return NotImplemented
+
+    def __hash__(self):
+        return hash(self.multiverse_id)
+
+    def __getitem__(self, index):
+        return getattr(self, index)
+
+    def items(self):
+        res = {(key, getattr(self, key)) for key in Cards.card_vars}
+        res |= {(key, getattr(self, key)) for key in ('image_url', 'rulings', 'alt_name')}
+        return res
+
+    def get(self, key, default_val=None):
+        return getattr(self, key, default_val)
 
 
-# Need to get tcgplayer partnership first so should probably make an app first
-def get_price(card):
-    pass
-
-
-# Note: Blocks don't work with predicates, but negated does
 class Cards:
     class CardsQuery:
-        ops = \
+        var_ops = \
             {
-                "equals": "{}='{}'",
-                "matches": "REGEXP({}, '{}')",
-                "contains": "{} LIKE '%{}%'",
-                "at_least": "{}>={}",
-                "at_most": "{}<={}"
+                "equals": {},
+                "matches": {},
+                "contains": {},
+                "at_least": {},
+                "at_most": {},
+                "greater_than": {},
+                "less_than": {},
             }
-        calculated_ops = \
+        var_tables = \
             {
-                "equals": lambda x, y: x == y,
-                "matches": regexp,
-                "contains": lambda x, y: x in y,
-                "at_least": lambda x, y: x >= y,
-                "at_most": lambda x, y: x <= y
+                # "printings": None,
+                "rarity": 'printings',
+                "watermark": 'printings',
+                # "alt_name": 'cards',
+                "loyalty": 'cards',
+                "set": 'printings',
+                "multiverse_id": 'printings',
+                "text": 'cards',
+                "type_line": 'cards',
+                "life": 'cards',
+                "flavor": 'printings',
+                # "rulings": None,
+                "mana_cost": 'card',
+                "artist": 'printings',
+                "supertypes": None,
+                "types": None,
+                "subtypes": None,
+                "colors": None,
+                "layout": 'cards',
+                "set_name": 'sets',
+                "power": 'cards',
+                "cmc": 'cards',
+                "name": 'cards',
+                # "legalities": 'None',
+                # "image_url": 'printings',
+                "color_identity": None,
+                "original_text": 'printings',
+                "number": 'printings',
+                "original_type": 'printings',
+                "hand": 'cards',
+                "toughness": 'cards'
             }
-        calculated_vars = \
-            {
-                "price": get_price,
-                # "legal_in_*"
-            }
+        basic_statement = '''SELECT printings.rarity, printings.watermark, cards.alt_name, cards.loyalty,
+            printings.set_code, printings.multiverse_id, cards.text, cards.type_line, cards.life,
+            printings.flavor, cards.mana_cost, printings.artist, cards.layout, sets.set_name,
+            cards.power, cards.cmc, cards.name, printings.original_text,
+            printings.number, printings.original_type, cards.hand, cards.toughness
+            FROM cards
+            INNER JOIN printings on printings.name = cards.name
+            INNER JOIN sets on sets.set_code = printings.set_code'''
+        normal_connectors = {' AND '}
 
         def __init__(self):
-            self.query = 'SELECT * FROM cards WHERE '
-            self.connector = ''
-            self.back_conn = ' AND '
-            self.preds = []
+            self.query = self.basic_statement[:]
+            self.params = []
+            self.connector = '\nWHERE '
             self.use_not = False
 
         def _where(self, _lookup, **kwargs):
-            for key, value in kwargs.items():
-                if key == 'type_line':
-                    key = 'type'
-                if key in cards_var:
-                    if value is None:
-                        value = "None"
-                    self.query += self.connector
-                    if self.use_not:
-                        self.query += ' NOT '
-                        self.use_not = False
-                    if isinstance(value, str):
-                        value = value.replace('\\', '\\\\').replace("'", "\\'")
-                    self.query += self.ops[_lookup].format(key, value)
-                elif key in self.calculated_vars:
-                    # Add a predicate that calculates the value from card
-                    # Then checks if calculated_ops[_lookup] returns true
-                    pass
-                if self.connector == '':
-                    self.connector = self.back_conn
+            if len(kwargs) != 1:
+                raise ValueError('Too many args at once, only accepts one per call')
+
+            key, value = list(kwargs.items())[0]
+            if key not in self.var_ops[_lookup]:
+                raise ValueError('Cannot test key by value')
+            if _lookup == 'contains':
+                if not Cards.card_vars[key].startswith('list'):
+                    value = '%{}%'.format(value)
+            elif Cards.card_vars[key].startswith('list'):
+                value = int(value)
+            elif Cards.card_vars[key].startswith('int'):
+                old_value = value
+                try:
+                    value = int(value)
+                except ValueError:
+                    value = old_value
+
+            table = self.var_tables[key]
+            table_key = key
+            if table is not None:
+                table_key = '{}.{}'.format(table, key)
+
+            self.query += self.connector
+            self.params.append(value)
+            if self.use_not:
+                self.query += ' NOT '
+                self.use_not = False
+            self.query += self.var_ops[_lookup][key].format(table_key)
+
+            if self.connector not in self.normal_connectors:
+                self.connector = ' AND '
             return self
 
         def where(self, **kwargs):
@@ -190,48 +220,36 @@ class Cards:
         def where_at_most(self, **kwargs):
             return self._where("at_most", **kwargs)
 
-        def with_pred(self, pred):
-            if self.use_not:
-                pred = functools.partial(pred, lambda p, x: not p(x))
-            self.preds.append(pred)
-            return self
+        def where_greater_than(self, **kwargs):
+            return self._where("greater_than", **kwargs)
 
-        def start_block(self):
-            self.query += self.connector + '('
-            self.connector = ''
-            self.back_conn = self.connector
-            return self
-
-        def end_block(self):
-            self.query += ')'
-            self.connector = self.back_conn
-            return self
-
-        def use_and(self):
-            self.connector = ' AND '
-            return self
-
-        def use_or(self):
-            self.connector = ' OR '
-            return self
+        def where_less_than(self, **kwargs):
+            return self._where("less_than", **kwargs)
 
         def negated(self):
             self.use_not = not self.use_not
             return self
 
         def find_all(self):
-            cursor = get_cursor()
+            conn = get_conn()
             if DEBUG:
-                print(self.query)
-            cursor.execute(self.query)
-            cards = [row_to_dict(x) for x in cursor.fetchall()]
-            return (card for card in cards if all(pred(card) for pred in self.preds))
+                print(self.query, self.params)
+            cards = [Card(x) for x in conn.execute(self.query, self.params)]
+            return cards
 
         def find_one(self):
-            return next(self.find_all())
+            cursor = get_cursor()
+            if DEBUG:
+                print(self.query, self.params)
+            cursor.execute(self.query, self.params)
+            row = cursor.fetchone()
+            if row is None:
+                return None
+            else:
+                return Card(row)
 
     @staticmethod
-    @disk_cache('res/cards.mvid.cache')
+    # @disk_cache('res/cards.mvid.cache')
     def find_by_mvid(mvid):
         return Cards.where(multiverse_id=mvid).find_one()
 
@@ -240,11 +258,46 @@ class Cards:
     def find_all_printings(mvid):
         card_name = Cards.find_by_mvid(mvid)['name']
         cards = Cards.where(name=card_name).find_all()
-        return (x['multiverse_id'] for x in cards)
+        return cards
 
     @staticmethod
     def default_sort_key(card):
         return (card['cmc'], card['name'])
+
+    card_vars = \
+        {
+            # "printings": 'list<string>',
+            "rarity": 'string',
+            "watermark": 'string',
+            # "alt_name": 'string',
+            "loyalty": 'int',
+            "set_code": 'string',
+            "multiverse_id": 'int',
+            "text": 'string',
+            "type_line": 'string',
+            "life": 'int',
+            "flavor": 'string',
+            # "rulings": 'list<Ruling>',
+            "mana_cost": 'string',
+            "artist": 'string',
+            "supertypes": 'list<string>',
+            "types": 'list<string>',
+            "subtypes": 'list<string>',
+            "colors": 'list<string>',
+            "layout": 'string',
+            "set_name": 'string',
+            "power": 'int',
+            "cmc": 'int',
+            "name": 'string',
+            # "legalities": 'list<Legality>',
+            # "image_url": 'string',
+            "color_identity": 'list<string>',
+            "original_text": 'string',
+            "number": 'string',
+            "original_type": 'string',
+            "hand": 'int',
+            "toughness": 'int'
+        }
 
 
 for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction):
@@ -258,6 +311,35 @@ for member in inspect.getmembers(Cards.CardsQuery, predicate=inspect.isfunction)
         return f(*args, **kwargs)
 
     setattr(Cards, member_name, staticmethod(functools.partial(func, member_name)))
+
+for var, var_type in Cards.card_vars.items():
+    if var_type.startswith('string'):
+        Cards.CardsQuery.var_ops['equals'][var] = '{} = ?'
+        Cards.CardsQuery.var_ops['matches'][var] = 'REGEXP({}, ?)'
+        Cards.CardsQuery.var_ops['contains'][var] = '{} LIKE ?'
+    if var_type.startswith('int'):
+        Cards.CardsQuery.var_ops['equals'][var] = '{} = ?'
+        Cards.CardsQuery.var_ops['at_least'][var] = '{} >= ?'
+        Cards.CardsQuery.var_ops['at_most'][var] = '{} <= ?'
+        Cards.CardsQuery.var_ops['greater_than'][var] = '{} > ?'
+        Cards.CardsQuery.var_ops['less_than'][var] = '{} < ?'
+    if var_type.startswith('list') and \
+       split_and_cut(var_type, '<', 1, '>', 0).startswith('string'):
+        inner_var = \
+            {
+                'supertypes': 'supertype',
+                'types': 'type',
+                'subtypes': 'subtype',
+                'colors': 'color',
+                'color_identity': 'color'
+            }
+        subquery = 'select * from {} where card_name = cards.name'
+        grouping = 'group by card_name having count(*)'
+        Cards.CardsQuery.var_ops['contains'][var] = 'exists({} and {} = ?)'.format(subquery, inner_var[var])
+        Cards.CardsQuery.var_ops['at_least'][var] = 'exists({} {} >= ?)'.format(subquery, grouping)
+        Cards.CardsQuery.var_ops['at_most'][var] = 'exists({} {} <= ?)'.format(subquery, grouping)
+        Cards.CardsQuery.var_ops['greater_than'][var] = 'exists({} {} > ?)'.format(subquery, grouping)
+        Cards.CardsQuery.var_ops['less_than'][var] = 'exists({} {} < ?)'.format(subquery, grouping)
 
 
 def is_origin_legal(mvid):

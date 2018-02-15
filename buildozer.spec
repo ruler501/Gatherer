@@ -30,13 +30,15 @@ source.exclude_patterns = create_db.py, workshop-release.jks, requirements.txt, 
 # (str) Application versioning (method 1)
 version = 0.0.1
 
+android.version = 2
+
 # (str) Application versioning (method 2)
 # version.regex = __version__ = ['"](.*)['"]
 # version.filename = %(source.dir)s/main.py
 
 # (list) Application requirements
 # comma seperated e.g. requirements = sqlite3,kivy
-requirements = python3crystax,kivy,sqlite3
+requirements = python3crystax, kivy, sqlite3
 
 # (str) Custom source folders for requirements
 # Sets custom source for any requirements with recipes
@@ -85,7 +87,7 @@ fullscreen = 0
 #android.presplash_color = #FFFFFF
 
 # (list) Permissions
-android.permissions = INTERNET, READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE
+android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE
 
 # (int) Android API to use
 #android.api = 19

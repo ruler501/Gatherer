@@ -127,7 +127,6 @@ class Deck:
                         elif loc == 'SB':
                             loc = 'Sideboard'
                         boards[loc].append((mvid, qty))
-                        print('adding', qty, mvid, 'to', loc)
                 except Exception as e:
                     print("Failed to parse line")
                     print(line)
@@ -137,7 +136,6 @@ class Deck:
         deck = Deck(name=trimmed_fname, file_location=fname)
         for board, cards in boards.items():
             deck.add_cards_by_mvid(board, *cards)
-        print(deck.boards)
         return deck
 
     def export_dec(self, fname=None, decked_compatible=False):

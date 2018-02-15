@@ -24,7 +24,8 @@ class ConfigurationManager:
     default_values = \
         {
             'window_width': 540,
-            'window_height': 960
+            'window_height': 960,
+            'offline': 'no'
         }
 
     def __init__(self, config_file):

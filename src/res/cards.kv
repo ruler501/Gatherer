@@ -2,6 +2,7 @@
     id: screen
     rulings_box: rulings_box
     inner_layout: inner_layout
+    image: image
     BoxLayout:
         ScrollView:
             size_hint: 1, 1
@@ -11,6 +12,7 @@
                 orientation: 'vertical'
                 spacing: dp(5)
                 CachedImage:
+                    id: image
                     size_hint: None, None
                     size: dp(446), dp(622)
                     source: screen.image_url

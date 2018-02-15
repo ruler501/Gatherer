@@ -2,15 +2,16 @@
     viewclass: 'CardResult'
     scroll_wheel_distance: dp(40)
     RecycleBoxLayout:
-        spacing: dp(10)
-        default_size: None, dp(100)
+        spacing: dp(5)
+        default_size: None, dp(75)
         default_size_hint: 1, None
         size_hint_y: None
         height: self.minimum_height
         orientation: 'vertical'
 
 <CardResult>:
-    height: self.minimum_height
+    height: dp(75)
+    size_hint: 1, None
     id: result
     canvas.before:
         Rectangle:
@@ -27,15 +28,23 @@
         original_height: 300
         crop_to: 15, 35, 183, 135
         allow_stretch: True
-    Label:
+    MultiLineLabel:
+        id: count
         text: result.count
         color: 0, 0, 0, 1
-        font_size: sp(48)
-        size_hint: 0.05, None
+        font_size: sp(36)
+        size_hint_y: 1
+        size_hint_x: None
         height: dp(75)
+        halign: 'center'
+        valign: 'center'
+    Label:
+        size_hint: None, None
+        size: dp(10), dp(75)
     BoxLayout:
         orientation: 'vertical'
-        size_hint: 0.25, None
+        width: (root.width - count.width - dp(112)) * 2 / 3
+        size_hint: None, None
         Label:
             text_size: self.size
             color: 0, 0, 0, 1
@@ -44,15 +53,18 @@
             font_size: sp(16)
             text: result.name
         Label:
+            size_hint: None, None
             text_size: self.size
             color: 0, 0, 0, 1
             size_hint: 1, None
             height: dp(38)
             font_size: sp(16)
             text: result.full_type_line
+            valign: 'top'
     BoxLayout:
         orientation: 'vertical'
-        size_hint: 0.25, 1
+        size_hint: None, None
+        width: (root.width - count.width - dp(112)) / 3
         ManaCost:
             size_hint: 1, None
             height: dp(37)
@@ -64,3 +76,4 @@
             font_size: sp(16)
             text: result.set_name
             text_size: self.size
+            valign: 'top'

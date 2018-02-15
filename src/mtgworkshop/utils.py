@@ -11,13 +11,13 @@ from kivy.clock import mainthread
 from kivy.garden.androidtabs import AndroidTabsBase
 from kivy.graphics.texture import Texture
 from kivy.metrics import sp
-from kivy.properties import ListProperty, NumericProperty, \
-    ObjectProperty, StringProperty
+from kivy.properties import ListProperty, NumericProperty, StringProperty
 from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.image import Image
 from kivy.uix.label import Label
 from kivy.uix.relativelayout import RelativeLayout
-from kivy.uix.widget import Widget
+
+from mtgworkshop.configuration import DefaultConfiguration
 
 
 class MultiLineLabel(Label):
@@ -40,14 +40,6 @@ class MultiLineLabel(Label):
         self.on_size(self, self.size)
 
 
-class ManaImage(Widget):
-    texture = ObjectProperty()
-
-    def __init__(self, texture, **kwargs):
-        self.texture = texture
-        super(ManaImage, self).__init__(**kwargs)
-
-
 class ManaCost(RelativeLayout):
     symbols = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11',
                '12', '13', '14', '15', '16', '17', '18', '19', '20', 'X', 'Y',
@@ -55,25 +47,19 @@ class ManaCost(RelativeLayout):
                'B/R', 'B/G', 'R/W', 'R/G', 'G/W', 'G/U', 'T', 'Q', '∞', '½',
                'FET', '4ET', 'OW']
     mana_cost = StringProperty('', allownone=True)
-    # full_texture = ObjectProperty(None, allownone=True)
 
     MANA_SIZE = sp(18)
-    # full_image = CoreImage(resource_find('res/Mana.png'), mipmap=True)
 
     def __init__(self, **kwargs):
         self.cache_images = defaultdict(list)
-        # self.full_image.bind(on_texture=self.set_full_texture)
-        # self.full_texture = self.full_image.texture
         super(ManaCost, self).__init__(**kwargs)
 
-    # def set_full_texture(self, *args):
-    #     self.full_texture = self.full_image.texture
-
     def on_mana_cost(self, instance, value):
+        self.clear_widgets()
+
         if value is None:
             return
 
-        self.clear_widgets()
         mana_cost = value.replace('{', '').split('}')
         count = 0
         pre_cache_images = defaultdict(list)
@@ -206,8 +192,10 @@ class CachedImage(Image):
                 self.saved_original_height = self.original_height
                 self.crop_to = []
                 self.original_height = None
-                get_thread = Thread(target=self.download_image, args=(value,))
-                get_thread.start()
+                offline = DefaultConfiguration.offline.lower()
+                if not ('true'.startswith(offline) or 'yes'.startswith(offline)):
+                    get_thread = Thread(target=self.download_image, args=(value,))
+                    get_thread.start()
                 self.source = 'res/loading.jpeg'
 
     def get_cached_path(self, original_value):

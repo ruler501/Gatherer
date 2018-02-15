@@ -25,7 +25,7 @@ source.include_patterns = res/*, src/mtgworkshop/*.py, src/res/*.kv
 #source.exclude_dirs = tests, bin
 
 # (list) List of exclusions using pattern matching
-source.exclude_patterns = create_db.py, workshop-release.jks, requirements.txt, *pycache*, bin/*, *buildozer*, src/res/databse.schema, cache/images/*.jpeg
+source.exclude_patterns = create_db.py, workshop-release.jks, requirements.txt, *cache*, bin/*, *buildozer*, src/res/databse.schema, cache/images/*.jpeg
 
 # (str) Application versioning (method 1)
 version = 0.0.1

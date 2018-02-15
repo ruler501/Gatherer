@@ -4,12 +4,14 @@ from kivy.uix.boxlayout import BoxLayout
 from kivy.uix.screenmanager import Screen
 
 from mtgworkshop.configuration import DefaultConfiguration
+from mtgworkshop.magic_db import Cards
 
 
 class CardScreen(Screen):
     card = ObjectProperty()
     rulings_box = ObjectProperty()
     inner_layout = ObjectProperty()
+    image = ObjectProperty()
 
     name = StringProperty()
     image_url = StringProperty()
@@ -100,6 +102,16 @@ class CardScreen(Screen):
         if current_deck is None:
             return
         current_deck.remove_cards(board, self.card)
+
+    def on_touch_down(self, touch):
+        super(CardScreen, self).on_touch_down(touch)
+        alt_name = self.card.alt_name
+        if self.image.collide_point(*touch.pos) and alt_name is not None:
+            card = Cards.where(name=alt_name).find_one()
+            if card is not None:
+                manager = self.parent
+                manager.switch_to(CardScreen(card, self.previous_screen, name=alt_name))
+        return False
 
 
 class RulingsBox(BoxLayout):

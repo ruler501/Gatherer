@@ -43,7 +43,7 @@ requirements = python3crystax,kivy,sqlite3
 # requirements.source.kivy = ../../kivy
 
 # (list) Garden requirements
-garden_requirements = androidtabs, filebrowser
+garden_requirements = androidtabs
 
 # (str) Presplash of the application
 #presplash.filename = %(source.dir)s/data/presplash.png

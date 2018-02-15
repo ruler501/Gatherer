@@ -30,7 +30,8 @@ class CardScreen(Screen):
 
     power_tough = StringProperty()
 
-    def __init__(self, card, **kwargs):
+    def __init__(self, card, previous_screen, **kwargs):
+        self.previous_screen = previous_screen
         super(CardScreen, self).__init__(**kwargs)
         self.card = card
         self.update_deck(DefaultConfiguration.current_deck)
@@ -85,7 +86,7 @@ class CardScreen(Screen):
 
     def to_results(self):
         manager = self.parent
-        manager.current = DefaultConfiguration.last_screen
+        manager.current = self.previous_screen
         manager.remove_widget(self)
 
     def add_card(self, board):

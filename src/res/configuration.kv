@@ -25,3 +25,12 @@
                 orientation: 'vertical'
                 size_hint: 1, None
                 spacing: dp(5)
+
+<FileChooserScreen>:
+    file_chooser: file_chooser
+    FileBrowser:
+        id: file_chooser
+        size_hint: 1, 1
+        path: self.parent.default_value
+        filters: ['*.dec']
+

@@ -14,6 +14,7 @@ from mtgworkshop.decks import DeckScreen
 from mtgworkshop.search import SearchScreen
 from mtgworkshop.utils import MyTab
 
+__version__ = '0.0.1-MVP'
 
 class WorkshopApp(App):
     def build(self):

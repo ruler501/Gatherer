@@ -135,6 +135,7 @@ class Cards:
                 "subtypes": None,
                 "colors": None,
                 "layout": 'cards',
+                "set_code": 'printings',
                 "set_name": 'sets',
                 "power": 'cards',
                 "cmc": 'cards',
